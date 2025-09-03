@@ -1,5 +1,15 @@
 {
   "version": 2,
+  "builds": [
+    { "src": "frontend/vite.config.ts", "use": "@vercel/static-build", "config": { "distDir": "frontend/dist" } }
+  ],
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "framework": null
+}
+
+{
+  "version": 2,
   "projects": [
     {
       "src": "frontend/package.json",
