@@ -1,3 +1,12 @@
+<<<<<<< HEAD
 {"level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-03 22:46:09"}
 {"level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-03 22:46:09"}
 {"level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-03 22:46:09"}
+=======
+{"level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-03 05:54:43"}
+{"level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-03 05:54:43"}
+{"level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-03 05:54:43"}
+{"level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-03 06:01:24"}
+{"level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-03 06:01:24"}
+{"level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-03 06:01:24"}
+>>>>>>> 710e3b3f552c8ca3b64709ce7433963d2428dab5
