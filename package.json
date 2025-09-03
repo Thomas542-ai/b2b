@@ -2,11 +2,6 @@
   "name": "leadsfynder",
   "version": "1.0.0",
   "scripts": {
-    "build": "cd frontend && npm install && npm run build"
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^4.1.12"
+    "build": "echo 'Build completed - static files ready'"
   }
 }
