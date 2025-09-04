@@ -9,10 +9,12 @@
     "dev": "nodemon --exec ts-node src/index.ts",
     "test": "jest",
     "migrate": "prisma migrate deploy",
+    "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts",
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
+    "@supabase/supabase-js": "^2.57.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
