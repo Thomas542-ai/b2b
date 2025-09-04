@@ -10,7 +10,8 @@
     "test": "jest",
     "migrate": "prisma migrate deploy",
     "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "vercel-build": "npm run build && npm run migrate"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
