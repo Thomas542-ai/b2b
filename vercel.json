@@ -7,15 +7,32 @@
       "config": {
         "distDir": "dist"
       }
+    },
+    {
+      "src": "backend/src/index.ts",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["backend/**"]
+      }
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/backend/src/index.ts"
+    },
     {
       "src": "/(.*)",
       "dest": "/frontend/dist/$1"
     }
   ],
   "env": {
-    "VITE_API_URL": "@vite_api_url"
+    "NODE_ENV": "production",
+    "VITE_API_URL": "/api"
+  },
+  "functions": {
+    "backend/src/index.ts": {
+      "maxDuration": 30
+    }
   }
 }
