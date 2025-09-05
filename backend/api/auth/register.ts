@@ -31,13 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const supabase = getSupabaseAdmin();
-    if (!supabase) {
-      return res.status(500).json({
-        success: false,
-        message: 'Database connection not available'
-      });
-    }
+    const supabase = await getSupabaseAdmin();
 
     // Check if user already exists in Supabase Auth
     const { data: existingUser, error: checkError } = await supabase.auth.admin.listUsers({
