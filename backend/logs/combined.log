@@ -1,3 +1,0 @@
-{"environment":"development","level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-04 21:15:32","vercel":"false"}
-{"environment":"development","level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-04 21:15:32","vercel":"false"}
-{"environment":"development","level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-04 21:15:32","vercel":"false"}

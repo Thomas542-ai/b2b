@@ -2,7 +2,8 @@
 
 /**
  * Test script to verify Supabase database connection
- * Run this script to check if your database connection is working
+ * This script tests the Prisma connection to Supabase PostgreSQL database
+ * Run this script to check if your Supabase database connection is working
  */
 
 const { PrismaClient } = require('@prisma/client');
@@ -12,6 +13,19 @@ const prisma = new PrismaClient();
 
 async function testConnection() {
   console.log('🔍 Testing Supabase database connection...\n');
+  
+  // Check environment variables first
+  if (!process.env.DATABASE_URL) {
+    console.error('❌ DATABASE_URL environment variable is missing');
+    console.log('Please set DATABASE_URL in your .env file with your Supabase connection string');
+    return;
+  }
+  
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+    console.error('❌ Supabase environment variables are missing');
+    console.log('Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file');
+    return;
+  }
   
   try {
     // Test basic connection
@@ -54,10 +68,11 @@ async function testConnection() {
     console.error('Error:', error.message);
     console.log('\n🔧 Troubleshooting:');
     console.log('1. Make sure you have a .env file in the backend directory');
-    console.log('2. Check that DATABASE_URL is correct');
+    console.log('2. Check that DATABASE_URL is correct (should be your Supabase PostgreSQL connection string)');
     console.log('3. Verify your Supabase database password');
-    console.log('4. Run: npx prisma generate');
-    console.log('5. Run: npx prisma db push');
+    console.log('4. Ensure SUPABASE_URL and SUPABASE_ANON_KEY are set');
+    console.log('5. Run: npx prisma generate');
+    console.log('6. Run: npx prisma db push');
   } finally {
     await prisma.$disconnect();
   }

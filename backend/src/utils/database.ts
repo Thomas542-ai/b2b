@@ -6,13 +6,18 @@ declare global {
   var __prisma: PrismaClient | undefined;
 }
 
-// Create Prisma client with optimized configuration
+// Create Prisma client with optimized configuration for Supabase
 const createPrismaClient = () => {
+  // Ensure DATABASE_URL is set for Supabase connection
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL environment variable is required for Supabase connection');
+  }
+
   return new PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL || 'postgresql://postgres.qphomvhegulifftzirmb:YOUR_DB_PASSWORD@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
+        url: process.env.DATABASE_URL
       }
     }
   });

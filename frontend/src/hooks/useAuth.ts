@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import { authService } from '../services/auth'
+import { isAuthenticated, getUserFromToken, removeToken } from '../utils/jwt'
 
 export interface User {
   id: string
@@ -15,22 +17,39 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    // Check if user is already authenticated (has token and user data)
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    
-    if (token && userData) {
-      try {
-        const parsedUser = JSON.parse(userData)
-        setUser(parsedUser)
-        setIsAuthenticated(true)
-      } catch (error) {
-        // Invalid user data, clear it
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        setIsAuthenticated(false)
+    // Check if user is already authenticated
+    if (isAuthenticated()) {
+      const userData = localStorage.getItem('user')
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData)
+          setUser(parsedUser)
+          setIsAuthenticated(true)
+        } catch (error) {
+          // Invalid user data, clear it
+          removeToken()
+          localStorage.removeItem('user')
+          setIsAuthenticated(false)
+        }
+      } else {
+        // Try to get user info from token
+        const tokenUser = getUserFromToken()
+        if (tokenUser) {
+          setUser({
+            id: tokenUser.userId,
+            email: tokenUser.email,
+            role: tokenUser.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN'
+          })
+          setIsAuthenticated(true)
+        } else {
+          removeToken()
+          setIsAuthenticated(false)
+        }
       }
     } else {
+      // Token is expired or doesn't exist
+      removeToken()
+      localStorage.removeItem('user')
       setIsAuthenticated(false)
     }
     
@@ -39,17 +58,9 @@ export function useAuth() {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:8000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      const result = await response.json()
-
-      if (response.ok) {
+      const result = await authService.login(email, password)
+      
+      if (result.success) {
         // Store token and user data
         localStorage.setItem('token', result.token)
         localStorage.setItem('user', JSON.stringify(result.user))
@@ -65,11 +76,18 @@ export function useAuth() {
   }
 
   const logout = async () => {
-    // Clear local storage
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    setUser(null)
-    setIsAuthenticated(false)
+    try {
+      // Call backend logout endpoint
+      await authService.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      // Clear local storage regardless of backend response
+      removeToken()
+      localStorage.removeItem('user')
+      setUser(null)
+      setIsAuthenticated(false)
+    }
   }
 
   return {
