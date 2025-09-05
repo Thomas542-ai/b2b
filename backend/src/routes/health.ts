@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma, checkDatabaseConnection } from '../utils/database';
 import { supabase } from '../config/supabase';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 /**
  * @swagger
@@ -54,12 +53,20 @@ router.get('/', (req: Request, res: Response) => {
  */
 router.get('/db', async (req: Request, res: Response) => {
   try {
-    await prisma.$queryRaw`SELECT 1`;
-    return res.status(200).json({
-      success: true,
-      message: 'Database connection is healthy',
-      timestamp: new Date().toISOString()
-    });
+    const isConnected = await checkDatabaseConnection();
+    if (isConnected) {
+      return res.status(200).json({
+        success: true,
+        message: 'Database connection is healthy',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection failed',
+        timestamp: new Date().toISOString()
+      });
+    }
   } catch (error) {
     return res.status(500).json({
       success: false,

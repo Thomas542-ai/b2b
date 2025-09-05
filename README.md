@@ -1,8 +1,8 @@
-# LeadsFynder - B2B Lead Generation & Outreach SaaS
+# LeadsFynder
 
-A comprehensive, production-ready B2B lead generation and outreach platform built with modern technologies.
+A lead generation and email marketing platform.
 
-## 🚀 Features
+## Quick Start
 
 ### Core Features
 - **Multi-Source Lead Generation**: Google Maps, Domain crawling, LinkedIn, Facebook, CSV import
@@ -155,6 +155,14 @@ npm run dev
 
 Create a `.env` file in the root directory:
 
+### 1. Get Supabase Database
+- Go to [supabase.com](https://supabase.com) (free)
+- Create project: "leadsfynder"
+- Copy the PostgreSQL connection string from Settings > Database
+- Copy the Supabase URL and API keys from Settings > API
+
+### 2. Update Environment
+Edit `backend/.env`:
 ```env
 # Database - Supabase
 DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
@@ -197,45 +205,25 @@ PORT=8000
 FRONTEND_URL="http://localhost:3000"
 ```
 
-## 📊 Database Schema
-
-The application uses PostgreSQL with the following main tables:
-
-- `users` - User accounts and profiles
-- `subscriptions` - User subscription data
-- `leads` - Lead information
-- `lead_sources` - Lead source tracking
-- `emails` - Email campaign data
-- `email_sequences` - Email sequence templates
-- `call_logs` - Call tracking
-- `follow_ups` - Follow-up reminders
-- `analytics` - Analytics data
-- `api_keys` - API key management
-
-## 🧪 Testing
-
-### Run Tests
+### 3. Run Project
 ```bash
-# Backend tests
+# Backend
 cd backend
-npm run test
-npm run test:e2e
+npm install
+npm run dev
 
-# Frontend tests
+# Frontend
 cd frontend
-npm run test
-npm run test:e2e
+npm install
+npm run dev
 ```
 
-### Test Coverage
+### 4. Deploy to Vercel
 ```bash
-# Backend coverage
-cd backend
-npm run test:cov
-
-# Frontend coverage
-cd frontend
-npm run test:cov
+npm install -g vercel
+vercel login
+cd backend && vercel --prod
+cd frontend && vercel --prod
 ```
 
 ## 🚀 Deployment

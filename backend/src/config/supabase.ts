@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
 
-// Supabase configuration
+dotenv.config();
+
+// Supabase configuration - Required environment variables
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -45,6 +48,16 @@ export const getSupabaseAdmin = () => {
     throw new Error('Supabase not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file');
   }
   return supabaseAdmin;
+};
+
+// Helper function to get database connection info
+export const getDatabaseInfo = () => {
+  return {
+    type: 'supabase',
+    url: supabaseUrl,
+    hasClient: !!supabase,
+    hasAdmin: !!supabaseAdmin
+  };
 };
 
 export default supabase;

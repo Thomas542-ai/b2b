@@ -1,5 +1,15 @@
 import winston from 'winston';
 
+// Create logs directory if it doesn't exist (for local development)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+  const fs = require('fs');
+  const path = require('path');
+  const logsDir = path.join(process.cwd(), 'logs');
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+}
+
 const logLevel = process.env.LOG_LEVEL || 'info';
 
 export const logger = winston.createLogger({
@@ -11,20 +21,27 @@ export const logger = winston.createLogger({
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'leadsfynder-api' },
+  defaultMeta: { 
+    service: 'leadsfynder-api',
+    environment: process.env.NODE_ENV || 'development',
+    vercel: process.env.VERCEL ? 'true' : 'false'
+  },
   transports: [
-    new winston.transports.File({ 
-      filename: 'logs/error.log', 
-      level: 'error' 
-    }),
-    new winston.transports.File({ 
-      filename: 'logs/combined.log' 
-    })
+    // Only add file transports in non-serverless environments
+    ...(process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? [
+      new winston.transports.File({ 
+        filename: 'logs/error.log', 
+        level: 'error' 
+      }),
+      new winston.transports.File({ 
+        filename: 'logs/combined.log' 
+      })
+    ] : [])
   ]
 });
 
-// If we're not in production, log to the console as well
-if (process.env.NODE_ENV !== 'production') {
+// Always log to console in serverless environments
+if (process.env.NODE_ENV !== 'production' || process.env.VERCEL) {
   logger.add(new winston.transports.Console({
     format: winston.format.combine(
       winston.format.colorize(),
@@ -32,5 +49,40 @@ if (process.env.NODE_ENV !== 'production') {
     )
   }));
 }
+
+// Enhanced logging methods
+export const enhancedLogger = {
+  ...logger,
+  
+  // Log API requests
+  logRequest: (req: any, res: any, responseTime: number) => {
+    logger.info('API Request', {
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      responseTime: `${responseTime}ms`,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    });
+  },
+
+  // Log errors with context
+  logError: (error: Error, context?: any) => {
+    logger.error('Application Error', {
+      message: error.message,
+      stack: error.stack,
+      context
+    });
+  },
+
+  // Log database operations
+  logDatabase: (operation: string, table: string, duration?: number) => {
+    logger.debug('Database Operation', {
+      operation,
+      table,
+      duration: duration ? `${duration}ms` : undefined
+    });
+  }
+};
 
 export default logger;
