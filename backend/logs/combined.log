@@ -7,3 +7,9 @@
 {"environment":"development","level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-05 12:47:13","vercel":"false"}
 {"environment":"development","level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-05 12:47:13","vercel":"false"}
 {"environment":"development","level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-05 12:47:13","vercel":"false"}
+{"environment":"development","level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-05 12:53:28","vercel":"false"}
+{"environment":"development","level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-05 12:53:28","vercel":"false"}
+{"environment":"development","level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-05 12:53:28","vercel":"false"}
+{"environment":"development","level":"info","message":"🚀 Server running on port 8000","service":"leadsfynder-api","timestamp":"2025-09-05 13:01:50","vercel":"false"}
+{"environment":"development","level":"info","message":"📚 API Documentation: http://localhost:8000/api/docs","service":"leadsfynder-api","timestamp":"2025-09-05 13:01:50","vercel":"false"}
+{"environment":"development","level":"info","message":"🏥 Health Check: http://localhost:8000/api/health","service":"leadsfynder-api","timestamp":"2025-09-05 13:01:50","vercel":"false"}
