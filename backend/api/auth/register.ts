@@ -1,9 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getSupabaseAdmin } from '../../src/config/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -34,51 +31,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection not available'
+      });
+    }
 
-    if (existingUser) {
+    // Check if user already exists in Supabase Auth
+    const { data: existingUser, error: checkError } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1
+    });
+    
+    const userExists = existingUser.users?.some(user => user.email === email);
+    
+    if (userExists) {
       return res.status(409).json({
         success: false,
         message: 'User with this email already exists'
       });
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
 
-    // Create user in database
-    const newUser = await prisma.user.create({
-      data: {
+    if (authError || !authData.user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to create user account'
+      });
+    }
+
+    // Create user profile in users table
+    const { data: newUser, error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
         firstName,
         lastName,
         email,
-        password: hashedPassword,
         company,
         phone,
-        isEmailVerified: false,
+        isEmailVerified: true,
         isActive: true,
-        role: 'USER'
-      }
-    });
+        role: 'USER',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (profileError || !newUser) {
+      // If profile creation fails, clean up the auth user
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user profile'
+      });
+    }
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email, role: newUser.role },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      jwtSecret,
+      { expiresIn: '7d' }
     );
-
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = newUser;
 
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: userWithoutPassword,
+      user: newUser,
       token
     });
 
@@ -88,7 +117,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: false,
       message: 'Internal server error during registration'
     });
-  } finally {
-    await prisma.$disconnect();
   }
 }

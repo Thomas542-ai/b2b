@@ -1,9 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getSupabaseAdmin } from '../../src/config/supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -34,29 +31,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Find user in database
-    const user = await prisma.user.findUnique({
-      where: { email }
+    const supabase = getSupabaseAdmin();
+    if (!supabase) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database connection not available'
+      });
+    }
+
+    // Use Supabase Auth for login
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password
     });
 
-    if (!user) {
+    if (authError || !authData.user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password || '');
-    if (!isPasswordValid) {
+    // Get user profile from users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
+
+    if (profileError || !userProfile) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'User profile not found'
       });
     }
 
     // Check if user is active
-    if (!user.isActive) {
+    if (!userProfile.isActive) {
       return res.status(403).json({
         success: false,
         message: 'Account is deactivated'
@@ -64,20 +75,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { userId: userProfile.id, email: userProfile.email, role: userProfile.role },
+      jwtSecret,
+      { expiresIn: '7d' }
     );
 
     // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    });
+    await supabase
+      .from('users')
+      .update({ lastLoginAt: new Date().toISOString() })
+      .eq('id', userProfile.id);
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
+    // Remove sensitive fields from response
+    const { password: _, ...userWithoutPassword } = userProfile;
 
     res.json({
       success: true,
@@ -92,7 +104,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       success: false,
       message: 'Internal server error during login'
     });
-  } finally {
-    await prisma.$disconnect();
   }
 }
