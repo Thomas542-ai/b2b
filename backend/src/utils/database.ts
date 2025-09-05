@@ -12,19 +12,9 @@ const createPrismaClient = () => {
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
       db: {
-        url: process.env.DATABASE_URL
+        url: process.env.DATABASE_URL || 'postgresql://postgres.qphomvhegulifftzirmb:YOUR_DB_PASSWORD@aws-0-us-east-1.pooler.supabase.com:6543/postgres'
       }
-    },
-    // Connection pooling for serverless
-    ...(process.env.VERCEL && {
-      // Optimize for serverless environments
-      __internal: {
-        engine: {
-          connectTimeout: 10000,
-          queryTimeout: 30000,
-        }
-      }
-    })
+    }
   });
 };
 
@@ -64,7 +54,7 @@ export const checkDatabaseConnection = async (): Promise<boolean> => {
 
 // Database transaction helper
 export const withTransaction = async <T>(
-  callback: (tx: PrismaClient) => Promise<T>
+  callback: (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => Promise<T>
 ): Promise<T> => {
   return await prisma.$transaction(callback);
 };
