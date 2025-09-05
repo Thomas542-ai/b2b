@@ -48,23 +48,20 @@ A comprehensive, production-ready B2B lead generation and outreach platform buil
 - **Joi** for validation
 
 ### Database
-- **PostgreSQL** (Supabase)
+- **Supabase** (PostgreSQL)
 - **Prisma** ORM
 - **Redis** for caching and sessions
 
 ### Infrastructure
-- **Docker** for containerization
-- **Docker Compose** for local development
-- **Nginx** for reverse proxy
-- **PM2** for process management
+- **Supabase** for database hosting
+- **Node.js** for backend runtime
+- **Vite** for frontend build tool
 
 ## 📦 Installation
 
 ### Prerequisites
 - Node.js 18+
-- Docker & Docker Compose
-- PostgreSQL 14+
-- Redis 6+
+- Supabase account
 
 ### Quick Start
 
@@ -74,31 +71,46 @@ git clone <repository-url>
 cd leadsfynder
 ```
 
-2. **Set up environment variables**
+2. **Set up Supabase**
 ```bash
-cp .env.example .env
-# Edit .env with your configuration
+# Create a new project at https://supabase.com
+# Get your database URL and API keys
 ```
 
-3. **Start with Docker**
+3. **Set up environment variables**
 ```bash
-docker-compose up -d
+cp env.example .env
+# Edit .env with your Supabase configuration
 ```
 
-4. **Run migrations**
+4. **Install dependencies**
 ```bash
-docker-compose exec backend npm run migrate
+# Backend
+cd backend && npm install
+
+# Frontend
+cd frontend && npm install
 ```
 
-5. **Seed demo data**
+5. **Run migrations**
 ```bash
-docker-compose exec backend npm run seed
+cd backend
+npx prisma db push
 ```
 
-6. **Access the application**
+6. **Start the application**
+```bash
+# Backend (Terminal 1)
+cd backend && npm run dev
+
+# Frontend (Terminal 2)
+cd frontend && npm run dev
+```
+
+7. **Access the application**
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000
-- Admin Panel: http://localhost:3000/admin
+- API Documentation: http://localhost:8000/api/docs
 
 ### Manual Setup
 
@@ -115,14 +127,14 @@ npm install
 
 2. **Database setup**
 ```bash
-# Create database
-createdb leadsfynder
+# Set up Supabase project and get connection details
+# Update .env with your Supabase credentials
 
 # Run migrations
 cd backend
-npm run migrate
+npx prisma db push
 
-# Seed data
+# Seed data (optional)
 npm run seed
 ```
 
@@ -144,8 +156,11 @@ npm run dev
 Create a `.env` file in the root directory:
 
 ```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/leadsfynder"
+# Database - Supabase
+DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+SUPABASE_URL="https://[PROJECT-REF].supabase.co"
+SUPABASE_ANON_KEY="[YOUR-ANON-KEY]"
+SUPABASE_SERVICE_ROLE_KEY="[YOUR-SERVICE-ROLE-KEY]"
 REDIS_URL="redis://localhost:6379"
 
 # JWT
@@ -229,35 +244,22 @@ npm run test:cov
 
 1. **Build the application**
 ```bash
-docker-compose -f docker-compose.prod.yml build
+# Backend
+cd backend && npm run build
+
+# Frontend
+cd frontend && npm run build
 ```
 
-2. **Deploy with Docker**
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
+2. **Deploy to your hosting platform**
+- Deploy backend to services like Vercel, Railway, or Heroku
+- Deploy frontend to Vercel, Netlify, or similar
+- Ensure environment variables are set correctly
 
 3. **Run migrations**
 ```bash
-docker-compose -f docker-compose.prod.yml exec backend npm run migrate
-```
-
-### cPanel/MySQL Migration
-
-1. **Export PostgreSQL schema**
-```bash
-pg_dump -h localhost -U username -d leadsfynder --schema-only > schema.sql
-```
-
-2. **Convert to MySQL**
-```bash
-# Use the provided conversion script
-./scripts/convert-to-mysql.sh schema.sql
-```
-
-3. **Import to MySQL**
-```bash
-mysql -u username -p database_name < schema_mysql.sql
+cd backend
+npx prisma db push
 ```
 
 ## 📈 Monitoring
@@ -269,14 +271,10 @@ mysql -u username -p database_name < schema_mysql.sql
 
 ### Logs
 ```bash
-# View logs
-docker-compose logs -f
+# Backend logs (if using PM2)
+pm2 logs
 
-# Backend logs
-docker-compose logs -f backend
-
-# Frontend logs
-docker-compose logs -f frontend
+# Or check console output when running npm run dev
 ```
 
 ## 🔒 Security

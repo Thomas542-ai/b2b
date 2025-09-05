@@ -3,10 +3,8 @@
 ## Quick Start
 
 ### Prerequisites
-- Docker & Docker Compose
-- Node.js 18+ (for local development)
-- PostgreSQL 14+ (for local development)
-- Redis 6+ (for local development)
+- Node.js 18+
+- Supabase account
 
 ### 1. Clone and Setup
 
@@ -22,30 +20,47 @@ cp env.example .env
 nano .env
 ```
 
-### 2. Start with Docker
+### 2. Set up Supabase
 
 ```bash
-# Start all services
-docker-compose up -d
-
-# Check services
-docker-compose ps
-
-# View logs
-docker-compose logs -f
+# 1. Create a new project at https://supabase.com
+# 2. Go to Settings > Database
+# 3. Copy your database URL and API keys
+# 4. Update your .env file with these credentials
 ```
 
-### 3. Database Setup
+### 3. Install Dependencies
 
 ```bash
-# Run migrations
-docker-compose exec backend npm run migrate
+# Backend
+cd backend && npm install
 
-# Seed demo data
-docker-compose exec backend npm run seed
+# Frontend
+cd frontend && npm install
 ```
 
-### 4. Access the Application
+### 4. Database Setup
+
+```bash
+# Run migrations to create tables
+cd backend
+npx prisma db push
+
+# Seed demo data (optional)
+npm run seed
+```
+
+### 5. Start the Application
+
+```bash
+# Backend (Terminal 1)
+cd backend && npm run dev
+
+# Frontend (Terminal 2)
+cd frontend && npm run dev
+```
+
+### 6. Access the Application
 
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:8000
@@ -93,8 +108,11 @@ npm run dev
 ### Required Environment Variables
 
 ```env
-# Database
-DATABASE_URL=postgresql://user:password@localhost:5432/leadsfynder
+# Database - Supabase
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+SUPABASE_URL=https://[PROJECT-REF].supabase.co
+SUPABASE_ANON_KEY=[YOUR-ANON-KEY]
+SUPABASE_SERVICE_ROLE_KEY=[YOUR-SERVICE-ROLE-KEY]
 
 # JWT
 JWT_SECRET=your-super-secret-jwt-key
@@ -118,10 +136,14 @@ DEBOUNCE_API_KEY=your-debounce-api-key
 
 ## Production Deployment
 
-### 1. Build Production Images
+### 1. Build for Production
 
 ```bash
-docker-compose -f docker-compose.prod.yml build
+# Backend
+cd backend && npm run build
+
+# Frontend
+cd frontend && npm run build
 ```
 
 ### 2. Set Production Environment
@@ -132,39 +154,35 @@ cp env.example .env.prod
 # Edit with production values
 ```
 
-### 3. Deploy
+### 3. Deploy to Hosting Platform
 
-```bash
-docker-compose -f docker-compose.prod.yml up -d
-```
+Deploy to services like:
+- **Backend**: Vercel, Railway, Heroku, or DigitalOcean
+- **Frontend**: Vercel, Netlify, or similar
 
 ### 4. Run Migrations
 
 ```bash
-docker-compose -f docker-compose.prod.yml exec backend npm run migrate
+cd backend
+npx prisma db push
 ```
 
-## Database Migration (cPanel/MySQL)
+## Database Migration (From Other Systems)
 
-### 1. Export PostgreSQL Schema
+### From Local PostgreSQL to Supabase
 
-```bash
-pg_dump -h localhost -U username -d leadsfynder --schema-only > schema.sql
-```
+1. **Export your data** (if you have existing data):
+   ```bash
+   pg_dump -h localhost -U username -d leadsfynder > backup.sql
+   ```
 
-### 2. Convert to MySQL
+2. **Import to Supabase**:
+   - Use the Supabase dashboard SQL editor
+   - Or use the Supabase CLI
 
-Use the provided conversion script:
+### From Other Databases
 
-```bash
-./scripts/convert-to-mysql.sh schema.sql
-```
-
-### 3. Import to MySQL
-
-```bash
-mysql -u username -p database_name < schema_mysql.sql
-```
+Use Supabase's migration tools or export/import functionality in the Supabase dashboard.
 
 ## Testing
 
@@ -222,15 +240,12 @@ npm run test:e2e
 ### Logs
 
 ```bash
-# View all logs
-docker-compose logs
+# Backend logs (if using PM2)
+pm2 logs
 
-# View specific service logs
-docker-compose logs backend
-docker-compose logs frontend
-
-# Follow logs in real-time
-docker-compose logs -f
+# Or check console output when running:
+# Backend: npm run dev
+# Frontend: npm run dev
 ```
 
 ## Support
