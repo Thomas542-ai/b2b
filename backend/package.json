@@ -8,10 +8,17 @@
     "start": "node dist/index.js",
     "dev": "nodemon --exec ts-node src/index.ts",
     "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
     "migrate:supabase": "ts-node scripts/migrate-to-supabase.ts",
     "seed": "ts-node prisma/seed.ts",
-    "vercel-build": "npm run build && npm run migrate"
+    "vercel-build": "npm run build && npm run migrate",
+    "postinstall": "prisma generate",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@prisma/client": "^5.7.1",
@@ -27,7 +34,6 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.7",
-    "redis": "^4.6.11",
     "stripe": "^14.10.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.0",

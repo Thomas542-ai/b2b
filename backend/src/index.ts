@@ -119,11 +119,13 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server
-app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📚 API Documentation: http://localhost:${PORT}/api/docs`);
-  logger.info(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-});
+// Start server only if not in Vercel environment
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📚 API Documentation: http://localhost:${PORT}/api/docs`);
+    logger.info(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+  });
+}
 
 export default app;

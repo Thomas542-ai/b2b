@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/database';
 import Joi from 'joi';
-
-const prisma = new PrismaClient();
 
 // Validation schema for registration
 const registerSchema = Joi.object({

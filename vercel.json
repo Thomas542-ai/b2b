@@ -9,17 +9,17 @@
       }
     },
     {
-      "src": "backend/src/index.ts",
+      "src": "api/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["backend/**"]
+        "includeFiles": ["backend/**", "node_modules/**"]
       }
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/backend/src/index.ts"
+      "dest": "/api/index.ts"
     },
     {
       "src": "/(.*)",
@@ -31,7 +31,7 @@
     "VITE_API_URL": "/api"
   },
   "functions": {
-    "backend/src/index.ts": {
+    "api/index.ts": {
       "maxDuration": 30
     }
   }
