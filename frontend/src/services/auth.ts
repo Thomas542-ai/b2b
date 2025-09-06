@@ -1,10 +1,13 @@
 import axios from 'axios'
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api')
+const API_URL = 'http://localhost:8000/api'
 
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+  withCredentials: false,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
 // Add request interceptor to include JWT token
@@ -32,7 +35,9 @@ api.interceptors.response.use(
 
 export const authService = {
   async login(email: string, password: string) {
+    console.log('Making login request to:', API_URL + '/auth/login')
     const response = await api.post('/auth/login', { email, password })
+    console.log('Login response:', response.data)
     return response.data
   },
 
@@ -42,6 +47,7 @@ export const authService = {
     firstName?: string
     lastName?: string
     company?: string
+    phone?: string
   }) {
     const response = await api.post('/auth/register', userData)
     return response.data

@@ -4,19 +4,15 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import swaggerJsdoc from 'swagger-jsdoc';
-import swaggerUi from 'swagger-ui-express';
 
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { authRoutes } from './routes/auth';
-import { userRoutes } from './routes/users';
-import { leadRoutes } from './routes/leads';
-import { emailRoutes } from './routes/emails';
-import { paymentRoutes } from './routes/payments';
-import { adminRoutes } from './routes/admin';
-import { analyticsRoutes } from './routes/analytics';
 import { healthRoutes } from './routes/health';
+import { leadRoutes } from './routes/leads';
+import { leadSourceRoutes } from './routes/leadSources';
+import { campaignRoutes } from './routes/campaigns';
+import { analyticsRoutes } from './routes/analytics';
 
 // Load environment variables
 dotenv.config();
@@ -30,29 +26,12 @@ app.use(helmet({
   contentSecurityPolicy: false,
 }));
 
-// CORS configuration for production
+// CORS configuration for development
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: Function) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'https://localhost:3000',
-      process.env.FRONTEND_URL,
-      process.env.CORS_ORIGIN
-    ].filter(Boolean);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200
 };
 
@@ -73,38 +52,15 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Compression middleware
 app.use(compression());
 
-// Swagger documentation
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'LeadsFynder API',
-      version: '1.0.0',
-      description: 'B2B Lead Generation & Outreach SaaS API',
-    },
-    servers: [
-      {
-        url: `http://localhost:${PORT}`,
-        description: 'Development server',
-      },
-    ],
-  },
-  apis: ['./src/routes/*.ts', './src/models/*.ts'],
-};
-
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Health check
 app.use('/api/health', healthRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
 app.use('/api/leads', leadRoutes);
-app.use('/api/emails', emailRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/lead-sources', leadSourceRoutes);
+app.use('/api/campaigns', campaignRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Error handling middleware
@@ -119,13 +75,10 @@ app.use('*', (req, res) => {
   });
 });
 
-// Start server only if not in Vercel environment
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  app.listen(PORT, () => {
-    logger.info(`🚀 Server running on port ${PORT}`);
-    logger.info(`📚 API Documentation: http://localhost:${PORT}/api/docs`);
-    logger.info(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  });
-}
+// Start server
+app.listen(PORT, () => {
+  logger.info(`🚀 Server running on port ${PORT}`);
+  logger.info(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+});
 
 export default app;

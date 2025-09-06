@@ -1,149 +1,285 @@
 import { Request, Response } from 'express';
-import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../utils/database';
-import Joi from 'joi';
+import { getSupabaseAdmin } from '../config/supabase';
 
-// Validation schema for registration
-const registerSchema = Joi.object({
-  firstName: Joi.string().min(2).max(50).required(),
-  lastName: Joi.string().min(2).max(50).required(),
-  email: Joi.string().email().required(),
-  password: Joi.string().min(8).required(),
-  company: Joi.string().min(2).max(100).required(),
-  phone: Joi.string().min(10).max(20).required()
-});
+// Development mode flag
+const isDevelopment = process.env.NODE_ENV === 'development';
 
-export const register = async (req: Request, res: Response): Promise<Response | void> => {
+// Mock user storage for development
+const mockUsers: any[] = [];
+
+export const register = async (req: Request, res: Response) => {
   try {
-    // Validate input data
-    const { error, value } = registerSchema.validate(req.body);
-    if (error) {
+    const { firstName, lastName, email, password, company, phone } = req.body;
+
+    if (!firstName || !lastName || !email || !password || !company || !phone) {
       return res.status(400).json({
         success: false,
-        message: 'Validation error',
-        errors: error.details.map(detail => detail.message)
+        message: 'All fields are required'
       });
     }
 
-    const { firstName, lastName, email, password, company, phone } = value;
+    // Development mode - use mock authentication
+    if (isDevelopment) {
+      // Check if user already exists in mock storage
+      const existingUser = mockUsers.find(user => user.email === email);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: 'User with this email already exists'
+        });
+      }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+      // Create mock user
+      const mockUser = {
+        id: `mock-${Date.now()}`,
+        firstName,
+        lastName,
+        email,
+        company,
+        phone,
+        isEmailVerified: true,
+        isActive: true,
+        role: 'USER',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      mockUsers.push(mockUser);
+
+      // Generate JWT token
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      const token = jwt.sign(
+        { userId: mockUser.id, email: mockUser.email, role: mockUser.role },
+        jwtSecret,
+        { expiresIn: '7d' }
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: 'User registered successfully (Development Mode)',
+        user: mockUser,
+        token
+      });
+    }
+
+    // Production mode - use Supabase
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file'
+      });
+    }
+
+    const supabase = await getSupabaseAdmin();
+
+    // Check if user already exists in Supabase Auth
+    const { data: existingUser, error: checkError } = await supabase.auth.admin.listUsers({
+      page: 1,
+      perPage: 1
     });
-
-    if (existingUser) {
+    
+    const userExists = existingUser.users?.some((user: any) => user.email === email);
+    
+    if (userExists) {
       return res.status(409).json({
         success: false,
         message: 'User with this email already exists'
       });
     }
 
-    // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
 
-    // Create user in database
-    const newUser = await prisma.user.create({
-      data: {
+    if (authError || !authData.user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Failed to create user account'
+      });
+    }
+
+    // Create user profile in users table
+    // Try different column name formats to handle schema variations
+    let newUser, profileError;
+    
+    // First try camelCase (from migration file)
+    const camelCaseResult = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
         firstName,
         lastName,
         email,
-        password: hashedPassword,
         company,
         phone,
-        isEmailVerified: false,
+        isEmailVerified: true,
         isActive: true,
-        role: 'USER'
-      }
-    });
+        role: 'USER',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
+      .select()
+      .single();
+    
+    if (camelCaseResult.error) {
+      // If camelCase fails, try snake_case
+      const snakeCaseResult = await supabase
+        .from('users')
+        .insert({
+          id: authData.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          company,
+          phone,
+          is_email_verified: true,
+          is_active: true,
+          role: 'USER',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      newUser = snakeCaseResult.data;
+      profileError = snakeCaseResult.error;
+    } else {
+      newUser = camelCaseResult.data;
+      profileError = camelCaseResult.error;
+    }
+
+    if (profileError || !newUser) {
+      // If profile creation fails, clean up the auth user
+      console.error('Profile creation failed:', profileError);
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create user profile',
+        error: profileError?.message || 'Unknown error'
+      });
+    }
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
     const token = jwt.sign(
       { userId: newUser.id, email: newUser.email, role: newUser.role },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as any
+      jwtSecret,
+      { expiresIn: '7d' }
     );
 
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = newUser;
-
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'User registered successfully',
-      user: userWithoutPassword,
+      user: newUser,
       token
     });
 
   } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({
+    console.error('Register error:', error);
+    return res.status(500).json({
       success: false,
       message: 'Internal server error during registration'
     });
   }
 };
 
-export const login = async (req: Request, res: Response): Promise<Response | void> => {
+export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Find user in database
-    const user = await prisma.user.findUnique({
-      where: { email }
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
+
+    // Development mode - use mock authentication
+    if (isDevelopment) {
+      // Find user in mock storage
+      const user = mockUsers.find(u => u.email === email);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid email or password'
+        });
+      }
+
+      // Generate JWT token
+      const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+      const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        jwtSecret,
+        { expiresIn: '7d' }
+      );
+
+      return res.json({
+        success: true,
+        message: 'Login successful (Development Mode)',
+        user,
+        token
+      });
+    }
+
+    // Production mode - use Supabase
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: 'Database not configured. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your .env file'
+      });
+    }
+
+    const supabase = await getSupabaseAdmin();
+
+    // Authenticate user with Supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password
     });
 
-    if (!user) {
+    if (authError || !authData.user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid email or password'
       });
     }
 
-    // Check password
-    const isPasswordValid = await bcrypt.compare(password, user.password || '');
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password'
-      });
-    }
+    // Get user profile from users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(403).json({
+    if (profileError || !userProfile) {
+      return res.status(500).json({
         success: false,
-        message: 'Account is deactivated'
+        message: 'Failed to retrieve user profile'
       });
     }
 
     // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
     const token = jwt.sign(
-      { userId: user.id, email: user.email, role: user.role },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as any
+      { userId: userProfile.id, email: userProfile.email, role: userProfile.role },
+      jwtSecret,
+      { expiresIn: '7d' }
     );
 
-    // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() }
-    });
-
-    // Remove password from response
-    const { password: _, ...userWithoutPassword } = user;
-
-    res.json({
+    return res.json({
       success: true,
       message: 'Login successful',
-      user: userWithoutPassword,
+      user: userProfile,
       token
     });
 
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Internal server error during login'
     });

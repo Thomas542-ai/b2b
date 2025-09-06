@@ -1,305 +1,445 @@
-import { useState } from 'react'
+import React, { useState, useEffect } from 'react';
 import { 
-  Plus, 
-  Mail, 
-  Users, 
-  Send, 
-  Eye,
-  Edit,
-  Trash2,
-  Calendar,
-  BarChart3,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Search,
-  Filter
-} from 'lucide-react'
-import { toast } from 'react-hot-toast'
-import { useApi } from '../hooks/useApi'
+  PlusIcon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon,
+  EnvelopeIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
+  EyeIcon,
+  ReplyIcon,
+  PaperAirplaneIcon,
+  CogIcon,
+  UserGroupIcon
+} from '@heroicons/react/24/outline';
 
-interface EmailCampaign {
-  id: string
-  name: string
-  subject: string
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused'
-  recipients: number
-  sent: number
-  opened: number
-  clicked: number
-  scheduledAt: string
-  createdAt: string
-  template: string
+interface Campaign {
+  id: string;
+  name: string;
+  subject: string;
+  status: 'draft' | 'scheduled' | 'sending' | 'paused' | 'completed' | 'stopped';
+  recipients: number;
+  sent: number;
+  delivered: number;
+  opened: number;
+  replied: number;
+  bounced: number;
+  createdAt: string;
+  scheduledFor?: string;
+  template: string;
+}
+
+interface SMTPConfig {
+  id: string;
+  name: string;
+  provider: string;
+  status: 'active' | 'inactive' | 'error';
+  dailyLimit: number;
+  sentToday: number;
+  lastUsed: string;
 }
 
 export default function EmailCampaigns() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all')
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
+  const [smtpConfigs, setSmtpConfigs] = useState<SMTPConfig[]>([]);
+  const [showCreateCampaign, setShowCreateCampaign] = useState(false);
+  const [showSMTPConfig, setShowSMTPConfig] = useState(false);
+  const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
+  const [newCampaign, setNewCampaign] = useState({
+    name: '',
+    subject: '',
+    template: '',
+    recipients: '',
+    scheduledFor: '',
+    smtpConfig: ''
+  });
 
-  const { data: campaigns = [], isLoading, error, refetch } = useApi<EmailCampaign[]>({
-    url: '/api/emails/campaigns',
-    cacheTime: 60000, // Cache for 1 minute
-    retryAttempts: 3,
-    retryDelay: 2000,
-    onError: (error) => {
-      // Fallback to mock data on error
-      console.log('Using mock data due to API error:', error)
+  useEffect(() => {
+    fetchCampaigns();
+    fetchSMTPConfigs();
+  }, []);
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/campaigns/email');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setCampaigns(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
     }
-  })
+  };
 
-  // Fallback mock data if API fails
-  const fallbackCampaigns: EmailCampaign[] = [
-    {
-      id: '1',
-      name: 'Q4 Product Launch',
-      subject: 'Introducing Our New Product Suite',
-      status: 'sent',
-      recipients: 1500,
-      sent: 1500,
-      opened: 450,
-      clicked: 89,
-      scheduledAt: '2024-01-15T10:00:00Z',
-      createdAt: '2024-01-10',
-      template: 'product-launch'
-    },
-    {
-      id: '2',
-      name: 'Welcome Series',
-      subject: 'Welcome to LeadsFynder!',
-      status: 'sending',
-      recipients: 500,
-      sent: 320,
-      opened: 96,
-      clicked: 24,
-      scheduledAt: '2024-01-20T14:00:00Z',
-      createdAt: '2024-01-18',
-      template: 'welcome-series'
-    },
-    {
-      id: '3',
-      name: 'Follow-up Campaign',
-      subject: 'Don\'t Miss Out on These Opportunities',
-      status: 'scheduled',
-      recipients: 800,
-      sent: 0,
-      opened: 0,
-      clicked: 0,
-      scheduledAt: '2024-01-25T09:00:00Z',
-      createdAt: '2024-01-22',
-      template: 'follow-up'
+  const fetchSMTPConfigs = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/campaigns/smtp');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setSmtpConfigs(data.data);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching SMTP configs:', error);
     }
-  ]
-
-  // Use API data if available, otherwise fallback to mock data
-  const displayCampaigns = campaigns && campaigns.length > 0 ? campaigns : fallbackCampaigns
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'draft': return 'bg-gray-100 text-gray-800'
-      case 'scheduled': return 'bg-blue-100 text-blue-800'
-      case 'sending': return 'bg-yellow-100 text-yellow-800'
-      case 'sent': return 'bg-green-100 text-green-800'
-      case 'paused': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'sending': return 'bg-yellow-100 text-yellow-800';
+      case 'paused': return 'bg-orange-100 text-orange-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'stopped': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'draft': return <Clock className="h-4 w-4" />
-      case 'scheduled': return <Calendar className="h-4 w-4" />
-      case 'sending': return <Send className="h-4 w-4" />
-      case 'sent': return <CheckCircle className="h-4 w-4" />
-      case 'paused': return <AlertCircle className="h-4 w-4" />
-      default: return <Clock className="h-4 w-4" />
+      case 'sending': return <PlayIcon className="h-4 w-4" />;
+      case 'paused': return <PauseIcon className="h-4 w-4" />;
+      case 'stopped': return <StopIcon className="h-4 w-4" />;
+      case 'completed': return <CheckCircleIcon className="h-4 w-4" />;
+      default: return <ClockIcon className="h-4 w-4" />;
     }
-  }
+  };
 
-  const filteredCampaigns = displayCampaigns.filter(campaign => {
-    const matchesSearch = 
-      campaign.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      campaign.subject.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = statusFilter === 'all' || campaign.status === statusFilter
-    
-    return matchesSearch && matchesStatus
-  })
+  const handleCreateCampaign = async () => {
+    if (newCampaign.name && newCampaign.subject && newCampaign.template) {
+      try {
+        const response = await fetch('http://localhost:8000/api/campaigns/email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: newCampaign.name,
+            subject: newCampaign.subject,
+            template: newCampaign.template,
+            recipients: parseInt(newCampaign.recipients) || 0,
+            scheduledFor: newCampaign.scheduledFor || undefined,
+            smtpConfig: newCampaign.smtpConfig
+          })
+        });
 
-  const handleCampaignAction = async (campaignId: string, action: string) => {
-    try {
-      const token = localStorage.getItem('token')
-      const response = await fetch(`/api/emails/campaigns/${campaignId}/${action}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCampaigns([data.data, ...campaigns]);
+            setNewCampaign({
+              name: '',
+              subject: '',
+              template: '',
+              recipients: '',
+              scheduledFor: '',
+              smtpConfig: ''
+            });
+            setShowCreateCampaign(false);
+          }
         }
-      })
-
-      if (response.ok) {
-        toast.success(`Campaign ${action} successful`)
-        refetch() // Refresh data using the new hook
-      } else {
-        toast.error(`Failed to ${action} campaign`)
+      } catch (error) {
+        console.error('Error creating campaign:', error);
       }
-    } catch (error) {
-      toast.error('Network error')
     }
-  }
+  };
 
-  const calculateOpenRate = (opened: number, sent: number) => {
-    return sent > 0 ? ((opened / sent) * 100).toFixed(1) : '0'
-  }
+  const handleCampaignAction = (campaignId: string, action: string) => {
+    setCampaigns(campaigns.map(campaign => {
+      if (campaign.id === campaignId) {
+        return { ...campaign, status: action as any };
+      }
+      return campaign;
+    }));
+  };
 
-  const calculateClickRate = (clicked: number, sent: number) => {
-    return sent > 0 ? ((clicked / sent) * 100).toFixed(1) : '0'
-  }
+  const getOpenRate = (campaign: Campaign) => {
+    return campaign.delivered > 0 ? ((campaign.opened / campaign.delivered) * 100).toFixed(1) : '0';
+  };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-      </div>
-    )
-  }
+  const getReplyRate = (campaign: Campaign) => {
+    return campaign.delivered > 0 ? ((campaign.replied / campaign.delivered) * 100).toFixed(1) : '0';
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Email Campaigns</h1>
-          <p className="text-gray-600">Create and manage your email marketing campaigns</p>
-        </div>
-        <div className="flex space-x-3">
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Campaign
-          </button>
-          <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center">
-            <Mail className="h-4 w-4 mr-2" />
-            Templates
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search campaigns..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Email Campaigns</h1>
+              <p className="mt-1 text-sm text-gray-500">
+                Create and manage your email outreach campaigns
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowSMTPConfig(true)}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center"
+              >
+                <CogIcon className="h-4 w-4 mr-2" />
+                SMTP Settings
+              </button>
+              <button
+                onClick={() => setShowCreateCampaign(true)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                New Campaign
+              </button>
             </div>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          >
-            <option value="all">All Status</option>
-            <option value="draft">Draft</option>
-            <option value="scheduled">Scheduled</option>
-            <option value="sending">Sending</option>
-            <option value="sent">Sent</option>
-            <option value="paused">Paused</option>
-          </select>
         </div>
       </div>
 
-      {/* Campaigns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCampaigns.map((campaign) => (
-          <div key={campaign.id} className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center">
-                <div className={`p-2 rounded-lg ${getStatusColor(campaign.status)}`}>
-                  {getStatusIcon(campaign.status)}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* SMTP Status Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {smtpConfigs.map((config) => (
+            <div key={config.id} className="bg-white rounded-lg shadow p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">{config.name}</h3>
+                  <p className="text-sm text-gray-500">{config.provider}</p>
                 </div>
-                <div className="ml-3">
-                  <h3 className="text-lg font-semibold text-gray-900">{campaign.name || 'Unnamed Campaign'}</h3>
-                  <p className="text-sm text-gray-600">{campaign.subject || 'No subject'}</p>
-                </div>
-              </div>
-              <div className="flex space-x-1">
-                <button 
-                  className="text-indigo-600 hover:text-indigo-900"
-                  onClick={() => handleCampaignAction(campaign.id, 'view')}
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
-                <button 
-                  className="text-green-600 hover:text-green-900"
-                  onClick={() => handleCampaignAction(campaign.id, 'edit')}
-                >
-                  <Edit className="h-4 w-4" />
-                </button>
-                <button 
-                  className="text-red-600 hover:text-red-900"
-                  onClick={() => handleCampaignAction(campaign.id, 'delete')}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Recipients:</span>
-                <span className="font-medium">{(campaign.recipients || 0).toLocaleString()}</span>
-              </div>
-              
-              {campaign.status === 'sent' || campaign.status === 'sending' ? (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Sent:</span>
-                    <span className="font-medium">{(campaign.sent || 0).toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Opened:</span>
-                    <span className="font-medium">{(campaign.opened || 0).toLocaleString()} ({calculateOpenRate(campaign.opened || 0, campaign.sent || 0)}%)</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Clicked:</span>
-                    <span className="font-medium">{(campaign.clicked || 0).toLocaleString()} ({calculateClickRate(campaign.clicked || 0, campaign.sent || 0)}%)</span>
-                  </div>
-                </>
-              ) : (
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Scheduled:</span>
-                  <span className="font-medium">{campaign.scheduledAt ? new Date(campaign.scheduledAt).toLocaleDateString() : 'N/A'}</span>
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-gray-200">
-                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(campaign.status)}`}>
-                  {campaign.status ? campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1) : 'Unknown'}
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  config.status === 'active' ? 'bg-green-100 text-green-800' :
+                  config.status === 'inactive' ? 'bg-gray-100 text-gray-800' : 'bg-red-100 text-red-800'
+                }`}>
+                  {config.status}
                 </span>
               </div>
+              <div className="mt-4">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Daily Limit</span>
+                  <span className="text-gray-900">{config.dailyLimit}</span>
+                </div>
+                <div className="flex justify-between text-sm mt-1">
+                  <span className="text-gray-500">Sent Today</span>
+                  <span className="text-gray-900">{config.sentToday}</span>
+                </div>
+                <div className="mt-2">
+                  <div className="bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-indigo-600 h-2 rounded-full" 
+                      style={{ width: `${(config.sentToday / config.dailyLimit) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
             </div>
+          ))}
+        </div>
+
+        {/* Campaigns Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">Email Campaigns</h3>
           </div>
-        ))}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Campaign
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Recipients
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Delivered
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Open Rate
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Reply Rate
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {campaigns.map((campaign) => (
+                  <tr key={campaign.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{campaign.name}</div>
+                        <div className="text-sm text-gray-500">{campaign.subject}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+                        {getStatusIcon(campaign.status)}
+                        <span className="ml-1">{campaign.status}</span>
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {campaign.recipients}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {campaign.delivered}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getOpenRate(campaign)}%
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getReplyRate(campaign)}%
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex space-x-2">
+                        {campaign.status === 'draft' && (
+                          <button
+                            onClick={() => handleCampaignAction(campaign.id, 'sending')}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {campaign.status === 'sending' && (
+                          <>
+                            <button
+                              onClick={() => handleCampaignAction(campaign.id, 'paused')}
+                              className="text-yellow-600 hover:text-yellow-900"
+                            >
+                              <PauseIcon className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleCampaignAction(campaign.id, 'stopped')}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              <StopIcon className="h-4 w-4" />
+                            </button>
+                          </>
+                        )}
+                        {campaign.status === 'paused' && (
+                          <button
+                            onClick={() => handleCampaignAction(campaign.id, 'sending')}
+                            className="text-green-600 hover:text-green-900"
+                          >
+                            <PlayIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setSelectedCampaign(campaign)}
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
-      {filteredCampaigns.length === 0 && (
-        <div className="text-center py-12">
-          <Mail className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No campaigns found</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Get started by creating your first email campaign.
-          </p>
-          <div className="mt-6">
-            <button className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center mx-auto">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Campaign
-            </button>
+      {/* Create Campaign Modal */}
+      {showCreateCampaign && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Create New Campaign</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Campaign Name</label>
+                  <input
+                    type="text"
+                    value={newCampaign.name}
+                    onChange={(e) => setNewCampaign({...newCampaign, name: e.target.value})}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g., Q1 Pet Supplies Outreach"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email Subject</label>
+                  <input
+                    type="text"
+                    value={newCampaign.subject}
+                    onChange={(e) => setNewCampaign({...newCampaign, subject: e.target.value})}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g., Premium Pet Food Solutions for Your Store"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Email Template</label>
+                  <textarea
+                    value={newCampaign.template}
+                    onChange={(e) => setNewCampaign({...newCampaign, template: e.target.value})}
+                    rows={8}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Hi {{first_name}},&#10;&#10;I hope this email finds you well. I wanted to reach out regarding...&#10;&#10;Best regards,&#10;{{sender_name}}"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Recipients</label>
+                    <select
+                      value={newCampaign.recipients}
+                      onChange={(e) => setNewCampaign({...newCampaign, recipients: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Select recipient list</option>
+                      <option value="50">Pet Supplies Leads (50)</option>
+                      <option value="100">Restaurant Leads (100)</option>
+                      <option value="75">Law Firm Leads (75)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">SMTP Config</label>
+                    <select
+                      value={newCampaign.smtpConfig}
+                      onChange={(e) => setNewCampaign({...newCampaign, smtpConfig: e.target.value})}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Select SMTP</option>
+                      <option value="gmail">Gmail Business</option>
+                      <option value="sendgrid">SendGrid Production</option>
+                      <option value="mailgun">Mailgun Backup</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Schedule (Optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={newCampaign.scheduledFor}
+                    onChange={(e) => setNewCampaign({...newCampaign, scheduledFor: e.target.value})}
+                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreateCampaign(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateCampaign}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
+                >
+                  Create Campaign
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { prisma, checkDatabaseConnection } from '../utils/database';
 import { supabase } from '../config/supabase';
 
 const router = Router();
@@ -53,20 +52,26 @@ router.get('/', (req: Request, res: Response) => {
  */
 router.get('/db', async (req: Request, res: Response) => {
   try {
-    const isConnected = await checkDatabaseConnection();
-    if (isConnected) {
-      return res.status(200).json({
-        success: true,
-        message: 'Database connection is healthy',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      return res.status(500).json({
+    // Check Supabase connection instead of local database
+    if (!supabase) {
+      return res.status(503).json({
         success: false,
-        message: 'Database connection failed',
+        message: 'Supabase not configured',
         timestamp: new Date().toISOString()
       });
     }
+
+    const { data, error } = await supabase.from('users').select('count').limit(1);
+    
+    if (error) {
+      throw error;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Database connection is healthy',
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -124,36 +129,5 @@ router.get('/supabase', async (req: Request, res: Response) => {
   }
 });
 
-/**
- * @swagger
- * /health/redis:
- *   get:
- *     summary: Redis health check
- *     description: Checks if the Redis connection is working
- *     tags: [Health]
- *     responses:
- *       200:
- *         description: Redis is healthy
- *       500:
- *         description: Redis connection failed
- */
-router.get('/redis', async (req: Request, res: Response) => {
-  try {
-    // This would require Redis client setup
-    // For now, return a mock response
-    return res.status(200).json({
-      success: true,
-      message: 'Redis connection is healthy',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Redis connection failed',
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    });
-  }
-});
 
 export const healthRoutes = router;

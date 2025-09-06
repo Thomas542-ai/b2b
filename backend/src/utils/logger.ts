@@ -1,7 +1,7 @@
 import winston from 'winston';
 
-// Create logs directory if it doesn't exist (for local development)
-if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+// Create logs directory if it doesn't exist
+if (process.env.NODE_ENV !== 'production') {
   const fs = require('fs');
   const path = require('path');
   const logsDir = path.join(process.cwd(), 'logs');
@@ -23,12 +23,11 @@ export const logger = winston.createLogger({
   ),
   defaultMeta: { 
     service: 'leadsfynder-api',
-    environment: process.env.NODE_ENV || 'development',
-    vercel: process.env.VERCEL ? 'true' : 'false'
+    environment: process.env.NODE_ENV || 'development'
   },
   transports: [
-    // Only add file transports in non-serverless environments
-    ...(process.env.NODE_ENV !== 'production' && !process.env.VERCEL ? [
+    // Only add file transports in development
+    ...(process.env.NODE_ENV !== 'production' ? [
       new winston.transports.File({ 
         filename: 'logs/error.log', 
         level: 'error' 
@@ -40,15 +39,13 @@ export const logger = winston.createLogger({
   ]
 });
 
-// Always log to console in serverless environments
-if (process.env.NODE_ENV !== 'production' || process.env.VERCEL) {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
+// Always log to console
+logger.add(new winston.transports.Console({
+  format: winston.format.combine(
+    winston.format.colorize(),
+    winston.format.simple()
+  )
+}));
 
 // Enhanced logging methods
 export const enhancedLogger = {

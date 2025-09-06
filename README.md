@@ -48,8 +48,7 @@ A lead generation and email marketing platform.
 - **Joi** for validation
 
 ### Database
-- **Supabase** (PostgreSQL)
-- **Prisma** ORM
+- **Supabase** (Cloud PostgreSQL)
 - **Redis** for caching and sessions
 
 ### Infrastructure
@@ -92,10 +91,10 @@ cd backend && npm install
 cd frontend && npm install
 ```
 
-5. **Run migrations**
+5. **Set up Supabase database**
 ```bash
-cd backend
-npx prisma db push
+# Create tables in your Supabase project using the SQL editor
+# Or use the Supabase dashboard to create the required tables
 ```
 
 6. **Start the application**
@@ -130,12 +129,8 @@ npm install
 # Set up Supabase project and get connection details
 # Update .env with your Supabase credentials
 
-# Run migrations
-cd backend
-npx prisma db push
-
-# Seed data (optional)
-npm run seed
+# Create database tables in Supabase dashboard
+# No local migrations needed - using Supabase only
 ```
 
 3. **Start development servers**
@@ -158,18 +153,15 @@ Create a `.env` file in the root directory:
 ### 1. Get Supabase Database
 - Go to [supabase.com](https://supabase.com) (free)
 - Create project: "leadsfynder"
-- Copy the PostgreSQL connection string from Settings > Database
 - Copy the Supabase URL and API keys from Settings > API
 
 ### 2. Update Environment
 Edit `backend/.env`:
 ```env
-# Database - Supabase
-DATABASE_URL="postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres"
+# Database - Supabase Only
 SUPABASE_URL="https://[PROJECT-REF].supabase.co"
 SUPABASE_ANON_KEY="[YOUR-ANON-KEY]"
 SUPABASE_SERVICE_ROLE_KEY="[YOUR-SERVICE-ROLE-KEY]"
-REDIS_URL="redis://localhost:6379"
 
 # JWT
 JWT_SECRET="your-jwt-secret"
@@ -218,13 +210,6 @@ npm install
 npm run dev
 ```
 
-### 4. Deploy to Vercel
-```bash
-npm install -g vercel
-vercel login
-cd backend && vercel --prod
-cd frontend && vercel --prod
-```
 
 ## 🚀 Deployment
 
@@ -240,14 +225,14 @@ cd frontend && npm run build
 ```
 
 2. **Deploy to your hosting platform**
-- Deploy backend to services like Vercel, Railway, or Heroku
-- Deploy frontend to Vercel, Netlify, or similar
+- Deploy backend to services like Railway, Heroku, or DigitalOcean
+- Deploy frontend to Netlify, GitHub Pages, or similar
 - Ensure environment variables are set correctly
 
-3. **Run migrations**
+3. **Set up database tables**
 ```bash
-cd backend
-npx prisma db push
+# Run the SQL migration script in your Supabase SQL Editor
+# See database/setup.md for instructions
 ```
 
 ## 📈 Monitoring

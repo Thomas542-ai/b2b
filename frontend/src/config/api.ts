@@ -1,5 +1,5 @@
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:8000/api'),
+  BASE_URL: 'http://localhost:8000/api',
   RATE_LIMIT: {
     MAX_REQUESTS: 100, // Maximum requests per window
     WINDOW_MS: 60000,  // 1 minute window
