@@ -24,106 +24,16 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { pathname } = new URL(req.url, `http://${req.headers.host}`);
-  
-  try {
-    // Route to different handlers based on path
-    if (pathname === '/api/auth/login' && req.method === 'POST') {
-      return await handleLogin(req, res);
-    } else if (pathname === '/api/auth/register' && req.method === 'POST') {
-      return await handleRegister(req, res);
-    } else if (pathname === '/api/health' && req.method === 'GET') {
-      return await handleHealth(req, res);
-    } else {
-      return res.status(404).json({
-        success: false,
-        message: 'Endpoint not found',
-        path: pathname
-      });
-    }
-  } catch (error) {
-    console.error('API Error:', error);
-    return res.status(500).json({
+  // Only allow POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({
       success: false,
-      message: 'Internal server error'
+      message: 'Method not allowed'
     });
   }
-}
 
-async function handleLogin(req, res) {
   try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email and password are required'
-      });
-    }
-
-    console.log('Login attempt:', { email });
-
-    // Authenticate user with Supabase
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    console.log('Login auth result:', { authData: authData?.user?.email, authError });
-
-    if (authError || !authData.user) {
-      console.error('Login failed:', authError);
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid email or password',
-        error: authError?.message
-      });
-    }
-
-    // Get user profile from users table
-    const { data: userProfile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
-      .single();
-
-    console.log('User profile retrieval:', { userProfile, profileError });
-
-    if (profileError || !userProfile) {
-      console.error('Failed to retrieve user profile:', profileError);
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to retrieve user profile',
-        error: profileError?.message
-      });
-    }
-
-    // Generate JWT token
-    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
-    const token = jwt.sign(
-      { userId: userProfile.id, email: userProfile.email, role: userProfile.role },
-      jwtSecret,
-      { expiresIn: '7d' }
-    );
-
-    return res.status(200).json({
-      success: true,
-      message: 'Login successful',
-      user: userProfile,
-      token
-    });
-
-  } catch (error) {
-    console.error('Login error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Internal server error during login'
-    });
-  }
-}
-
-async function handleRegister(req, res) {
-  try {
+    console.log('Register endpoint called with body:', req.body);
     const { firstName, lastName, email, password, company, phone } = req.body;
     console.log('Registration attempt:', { email, firstName, lastName });
 
@@ -254,14 +164,4 @@ async function handleRegister(req, res) {
       message: 'Internal server error during registration'
     });
   }
-}
-
-async function handleHealth(req, res) {
-  return res.status(200).json({
-    success: true,
-    message: 'LeadsFynder API is healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
-    version: '1.0.0'
-  });
 }
