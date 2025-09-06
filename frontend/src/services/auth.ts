@@ -4,6 +4,9 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api')
 
+// Dynamic endpoint paths based on environment
+const AUTH_PREFIX = import.meta.env.DEV ? '/auth' : ''
+
 const api = axios.create({
   baseURL: API_URL,
   withCredentials: false,
@@ -37,8 +40,8 @@ api.interceptors.response.use(
 
 export const authService = {
   async login(email: string, password: string) {
-    console.log('Making login request to:', API_URL + '/login')
-    const response = await api.post('/login', { email, password })
+    console.log('Making login request to:', API_URL + AUTH_PREFIX + '/login')
+    const response = await api.post(AUTH_PREFIX + '/login', { email, password })
     console.log('Login response:', response.data)
     return response.data
   },
@@ -51,8 +54,8 @@ export const authService = {
     company?: string
     phone?: string
   }) {
-    console.log('Making register request to:', API_URL + '/register')
-    const response = await api.post('/register', userData)
+    console.log('Making register request to:', API_URL + AUTH_PREFIX + '/register')
+    const response = await api.post(AUTH_PREFIX + '/register', userData)
     console.log('Register response:', response.data)
     return response.data
   },
