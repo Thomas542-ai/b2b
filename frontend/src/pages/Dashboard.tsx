@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { getApiUrl } from '../config/api';
 import { 
   ChartBarIcon, 
   UserGroupIcon, 
@@ -54,8 +55,8 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       const [statsResponse, activityResponse] = await Promise.all([
-        fetch('http://localhost:8000/api/analytics/dashboard'),
-        fetch('http://localhost:8000/api/analytics/activity')
+        fetch(getApiUrl('/analytics/dashboard')),
+        fetch(getApiUrl('/analytics/activity'))
       ]);
 
       if (statsResponse.ok) {

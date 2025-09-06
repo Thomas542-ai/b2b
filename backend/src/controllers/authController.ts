@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { getSupabaseAdmin } from '../config/supabase';
 
 // Development mode flag
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Mock user storage for development
 const mockUsers: any[] = [];
@@ -20,7 +20,7 @@ export const register = async (req: Request, res: Response) => {
     }
 
     // Development mode - use mock authentication
-    if (isDevelopment) {
+    if (!isProduction) {
       // Check if user already exists in mock storage
       const existingUser = mockUsers.find(user => user.email === email);
       if (existingUser) {
@@ -199,7 +199,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     // Development mode - use mock authentication
-    if (isDevelopment) {
+    if (!isProduction) {
       // Find user in mock storage
       const user = mockUsers.find(u => u.email === email);
       if (!user) {

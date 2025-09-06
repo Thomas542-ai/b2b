@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getApiUrl } from '../config/api';
 import { 
   MapPinIcon, 
   GlobeAltIcon, 
@@ -102,7 +103,7 @@ export default function LeadSources() {
     setIsSearching(true);
     
     try {
-      const response = await fetch('http://localhost:8000/api/lead-sources/google-maps', {
+      const response = await fetch(getApiUrl('/lead-sources/google-maps'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

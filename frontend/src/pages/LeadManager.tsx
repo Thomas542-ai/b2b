@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
 import { 
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -68,7 +69,7 @@ export default function LeadManager() {
 
   const fetchLeads = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/leads');
+      const response = await fetch(getApiUrl('/leads'));
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -82,7 +83,7 @@ export default function LeadManager() {
 
   const fetchCallLogs = async (leadId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/leads/${leadId}/call-logs`);
+      const response = await fetch(getApiUrl(`/leads/${leadId}/call-logs`));
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -136,7 +137,7 @@ export default function LeadManager() {
   const handleAddCallLog = async () => {
     if (selectedLead && newCallLog.notes) {
       try {
-        const response = await fetch(`http://localhost:8000/api/leads/${selectedLead.id}/call-logs`, {
+        const response = await fetch(getApiUrl(`/leads/${selectedLead.id}/call-logs`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

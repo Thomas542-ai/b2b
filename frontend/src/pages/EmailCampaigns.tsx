@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiUrl } from '../config/api';
 import { 
   PlusIcon,
   PlayIcon,
@@ -63,7 +64,7 @@ export default function EmailCampaigns() {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/campaigns/email');
+      const response = await fetch(getApiUrl('/campaigns/email'));
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -77,7 +78,7 @@ export default function EmailCampaigns() {
 
   const fetchSMTPConfigs = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/campaigns/smtp');
+      const response = await fetch(getApiUrl('/campaigns/smtp'));
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
@@ -114,7 +115,7 @@ export default function EmailCampaigns() {
   const handleCreateCampaign = async () => {
     if (newCampaign.name && newCampaign.subject && newCampaign.template) {
       try {
-        const response = await fetch('http://localhost:8000/api/campaigns/email', {
+        const response = await fetch(getApiUrl('/campaigns/email'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
