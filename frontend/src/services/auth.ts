@@ -37,8 +37,8 @@ api.interceptors.response.use(
 
 export const authService = {
   async login(email: string, password: string) {
-    console.log('Making login request to:', API_URL + '/auth/login')
-    const response = await api.post('/auth/login', { email, password })
+    console.log('Making login request to:', API_URL + '/login')
+    const response = await api.post('/login', { email, password })
     console.log('Login response:', response.data)
     return response.data
   },
@@ -51,7 +51,9 @@ export const authService = {
     company?: string
     phone?: string
   }) {
-    const response = await api.post('/auth/register', userData)
+    console.log('Making register request to:', API_URL + '/register')
+    const response = await api.post('/register', userData)
+    console.log('Register response:', response.data)
     return response.data
   },
 
