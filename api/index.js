@@ -1,5 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
-import jwt from 'jsonwebtoken';
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
+app.use(express.json());
 
 // Initialize Supabase client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -11,27 +23,83 @@ if (!supabaseUrl || !supabaseServiceKey) {
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-export default async function handler(req, res) {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+// Login endpoint
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    console.log('Login endpoint called with body:', req.body);
+    const { email, password } = req.body;
 
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+    if (!email || !password) {
+      console.log('Missing email or password:', { email: !!email, password: !!password });
+      return res.status(400).json({
+        success: false,
+        message: 'Email and password are required'
+      });
+    }
 
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({
+    console.log('Login attempt:', { email });
+
+    // Authenticate user with Supabase
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    console.log('Login auth result:', { authData: authData?.user?.email, authError });
+
+    if (authError || !authData.user) {
+      console.error('Login failed:', authError);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid email or password',
+        error: authError?.message
+      });
+    }
+
+    // Get user profile from users table
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single();
+
+    console.log('User profile retrieval:', { userProfile, profileError });
+
+    if (profileError || !userProfile) {
+      console.error('Failed to retrieve user profile:', profileError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve user profile',
+        error: profileError?.message
+      });
+    }
+
+    // Generate JWT token
+    const jwtSecret = process.env.JWT_SECRET || 'fallback-secret';
+    const token = jwt.sign(
+      { userId: userProfile.id, email: userProfile.email, role: userProfile.role },
+      jwtSecret,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      user: userProfile,
+      token
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Method not allowed'
+      message: 'Internal server error during login'
     });
   }
+});
 
+// Register endpoint
+app.post('/api/auth/register', async (req, res) => {
   try {
     console.log('Register endpoint called with body:', req.body);
     const { firstName, lastName, email, password, company, phone } = req.body;
@@ -164,4 +232,38 @@ export default async function handler(req, res) {
       message: 'Internal server error during registration'
     });
   }
-}
+});
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('users').select('id').limit(1);
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      message: 'LeadsFynder API is healthy and connected to Supabase',
+      timestamp: new Date().toISOString(),
+      databaseConnected: true
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'API is unhealthy or database connection failed',
+      error: error.message
+    });
+  }
+});
+
+// Catch all for other routes
+app.all('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
+});
+
+module.exports = app;
