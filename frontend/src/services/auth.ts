@@ -7,17 +7,22 @@ const API_URL = import.meta.env.VITE_API_URL ||
 // Dynamic endpoint paths based on environment
 // For Vercel deployment, we need to detect if we're in production
 const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost'
-// In production (Vercel), the endpoints are directly under /api (no /auth prefix)
-// In local dev, they're under /api/auth
+
+// EXPLICIT FIX: Force production endpoints for Vercel
+// Local dev (Express backend): /api/auth/login
+// Production (Vercel serverless): /api/login
+// The issue is that in production, we should NOT use /auth prefix
 const AUTH_PREFIX = isLocalDev ? '/auth' : ''
 
 // Debug logging
-console.log('Auth service config:', {
+console.log('🔧 Auth service config:', {
   isLocalDev,
   AUTH_PREFIX,
   API_URL,
   hostname: window.location.hostname,
-  env: import.meta.env.DEV
+  env: import.meta.env.DEV,
+  expectedEndpoint: isLocalDev ? '/api/auth/login' : '/api/login',
+  actualEndpoint: API_URL + AUTH_PREFIX + '/login'
 })
 
 const api = axios.create({
@@ -54,14 +59,32 @@ api.interceptors.response.use(
 export const authService = {
   async login(email: string, password: string) {
     const endpoint = AUTH_PREFIX + '/login'
-    console.log('Login request:', {
+    const fullUrl = API_URL + endpoint
+    console.log('🔍 LOGIN DEBUG:', {
       endpoint,
-      fullUrl: API_URL + endpoint,
+      fullUrl,
       baseURL: API_URL,
-      AUTH_PREFIX
+      AUTH_PREFIX,
+      isLocalDev,
+      hostname: window.location.hostname,
+      env: import.meta.env.DEV,
+      VITE_API_URL: import.meta.env.VITE_API_URL
     })
-    const response = await api.post(endpoint, { email, password })
-    return response.data
+    
+    try {
+      const response = await api.post(endpoint, { email, password })
+      console.log('✅ Login successful:', response.data)
+      return response.data
+    } catch (error: any) {
+      console.error('❌ Login failed:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        method: error.config?.method
+      })
+      throw error
+    }
   },
 
   async register(userData: {
