@@ -7,7 +7,18 @@ const API_URL = import.meta.env.VITE_API_URL ||
 // Dynamic endpoint paths based on environment
 // For Vercel deployment, we need to detect if we're in production
 const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost'
+// In production (Vercel), the endpoints are directly under /api (no /auth prefix)
+// In local dev, they're under /api/auth
 const AUTH_PREFIX = isLocalDev ? '/auth' : ''
+
+// Debug logging
+console.log('Auth service config:', {
+  isLocalDev,
+  AUTH_PREFIX,
+  API_URL,
+  hostname: window.location.hostname,
+  env: import.meta.env.DEV
+})
 
 const api = axios.create({
   baseURL: API_URL,
@@ -42,7 +53,14 @@ api.interceptors.response.use(
 
 export const authService = {
   async login(email: string, password: string) {
-    const response = await api.post(AUTH_PREFIX + '/login', { email, password })
+    const endpoint = AUTH_PREFIX + '/login'
+    console.log('Login request:', {
+      endpoint,
+      fullUrl: API_URL + endpoint,
+      baseURL: API_URL,
+      AUTH_PREFIX
+    })
+    const response = await api.post(endpoint, { email, password })
     return response.data
   },
 
