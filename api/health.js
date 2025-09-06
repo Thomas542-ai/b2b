@@ -1,6 +1,12 @@
 const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async (req, res) => {
+  console.log('🔍 Health function called:', {
+    method: req.method,
+    url: req.url,
+    timestamp: new Date().toISOString()
+  });
+
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -8,15 +14,18 @@ module.exports = async (req, res) => {
   
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('✅ Handling OPTIONS preflight request');
     res.status(200).end();
     return;
   }
 
   // Only allow GET requests
   if (req.method !== 'GET') {
+    console.log('❌ Method not allowed:', req.method);
     return res.status(405).json({ 
       success: false, 
-      message: 'Method not allowed. Only GET requests are accepted.' 
+      message: 'Method not allowed. Only GET requests are accepted.',
+      receivedMethod: req.method
     });
   }
 
