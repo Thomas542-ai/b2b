@@ -5,11 +5,6 @@ import { AnalyticsService } from './analytics.service';
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
 
-  @Get('dashboard')
-  async getDashboardAnalytics() {
-    return this.analyticsService.getDashboardAnalytics();
-  }
-
   @Get('leads')
   async getLeadAnalytics() {
     return this.analyticsService.getLeadAnalytics();
@@ -20,8 +15,8 @@ export class AnalyticsController {
     return this.analyticsService.getCampaignAnalytics();
   }
 
-  @Get('activity')
-  async getActivityAnalytics() {
-    return this.analyticsService.getActivityAnalytics();
+  @Get('revenue')
+  async getRevenueAnalytics() {
+    return this.analyticsService.getRevenueAnalytics();
   }
 }

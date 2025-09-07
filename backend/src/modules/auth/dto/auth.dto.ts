@@ -14,9 +14,8 @@ export class RegisterDto {
   @IsString()
   lastName: string;
 
-  @IsOptional()
   @IsString()
-  company?: string;
+  company: string;
 
   @IsOptional()
   @IsString()

@@ -71,11 +71,20 @@ export default function LeadManager() {
     try {
       const response = await fetch(getApiUrl('/leads'));
       if (response.ok) {
-        const data = await response.json();
-        setLeads(data);
+        const result = await response.json();
+        // Handle both direct array and object with data property
+        if (Array.isArray(result)) {
+          setLeads(result);
+        } else if (result.data && Array.isArray(result.data)) {
+          setLeads(result.data);
+        } else {
+          // Fallback to empty array if no valid data
+          setLeads([]);
+        }
       }
     } catch (error) {
-      // Error fetching leads handled silently
+      console.error('Error fetching leads:', error);
+      setLeads([]);
     }
   };
 
@@ -94,7 +103,7 @@ export default function LeadManager() {
   };
 
   useEffect(() => {
-    let filtered = leads;
+    let filtered = Array.isArray(leads) ? leads : [];
 
     if (searchTerm) {
       filtered = filtered.filter(lead =>
@@ -170,9 +179,9 @@ export default function LeadManager() {
     }
   };
 
-  const todayFollowUps = leads.filter(lead => 
+  const todayFollowUps = Array.isArray(leads) ? leads.filter(lead => 
     lead.nextFollowUp && new Date(lead.nextFollowUp).toDateString() === new Date().toDateString()
-  );
+  ) : [];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -288,7 +297,7 @@ export default function LeadManager() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredLeads.map((lead) => (
+                    {Array.isArray(filteredLeads) && filteredLeads.map((lead) => (
                       <tr
                         key={lead.id}
                         className={`hover:bg-gray-50 cursor-pointer ${
@@ -399,7 +408,7 @@ export default function LeadManager() {
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-4">Call History</h3>
                   <div className="space-y-4">
-                    {callLogs
+                    {Array.isArray(callLogs) && callLogs
                       .filter(log => log.leadId === selectedLead.id)
                       .map((log) => (
                         <div key={log.id} className="border-l-4 border-indigo-400 pl-4">

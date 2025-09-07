@@ -1,27 +1,23 @@
-import { Logger as NestLogger } from '@nestjs/common';
+export class Logger {
+  private context: string;
 
-export class Logger extends NestLogger {
-  constructor(context?: string) {
-    super(context);
+  constructor(context: string) {
+    this.context = context;
   }
 
-  log(message: string, context?: string) {
-    super.log(message, context);
+  log(message: string) {
+    console.log(`[${this.context}] ${message}`);
   }
 
-  error(message: string, trace?: string, context?: string) {
-    super.error(message, trace, context);
+  error(message: string, error?: any) {
+    console.error(`[${this.context}] ${message}`, error);
   }
 
-  warn(message: string, context?: string) {
-    super.warn(message, context);
+  warn(message: string) {
+    console.warn(`[${this.context}] ${message}`);
   }
 
-  debug(message: string, context?: string) {
-    super.debug(message, context);
-  }
-
-  verbose(message: string, context?: string) {
-    super.verbose(message, context);
+  debug(message: string) {
+    console.debug(`[${this.context}] ${message}`);
   }
 }

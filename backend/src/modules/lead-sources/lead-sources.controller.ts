@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { LeadSourcesService } from './lead-sources.service';
 
 @Controller('lead-sources')
@@ -6,17 +6,27 @@ export class LeadSourcesController {
   constructor(private readonly leadSourcesService: LeadSourcesService) {}
 
   @Get()
-  async getLeadSources() {
-    return this.leadSourcesService.getLeadSources();
+  async getAllLeadSources() {
+    return this.leadSourcesService.getAllLeadSources();
   }
 
-  @Post('google-maps')
-  async scrapeGoogleMaps(@Body() data: any) {
-    return this.leadSourcesService.scrapeGoogleMaps(data);
+  @Get(':id')
+  async getLeadSourceById(@Param('id') id: string) {
+    return this.leadSourcesService.getLeadSourceById(id);
   }
 
-  @Post('linkedin')
-  async scrapeLinkedIn(@Body() data: any) {
-    return this.leadSourcesService.scrapeLinkedIn(data);
+  @Post()
+  async createLeadSource(@Body() createLeadSourceDto: any) {
+    return this.leadSourcesService.createLeadSource(createLeadSourceDto);
+  }
+
+  @Put(':id')
+  async updateLeadSource(@Param('id') id: string, @Body() updateLeadSourceDto: any) {
+    return this.leadSourcesService.updateLeadSource(id, updateLeadSourceDto);
+  }
+
+  @Delete(':id')
+  async deleteLeadSource(@Param('id') id: string) {
+    return this.leadSourcesService.deleteLeadSource(id);
   }
 }

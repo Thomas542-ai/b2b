@@ -66,11 +66,20 @@ export default function EmailCampaigns() {
     try {
       const response = await fetch(getApiUrl('/campaigns/email'));
       if (response.ok) {
-        const data = await response.json();
-        setCampaigns(data);
+        const result = await response.json();
+        // Handle both direct array and object with data property
+        if (Array.isArray(result)) {
+          setCampaigns(result);
+        } else if (result.data && Array.isArray(result.data)) {
+          setCampaigns(result.data);
+        } else {
+          // Fallback to empty array if no valid data
+          setCampaigns([]);
+        }
       }
     } catch (error) {
-      // Error fetching campaigns handled silently
+      console.error('Error fetching campaigns:', error);
+      setCampaigns([]);
     }
   };
 
@@ -78,11 +87,20 @@ export default function EmailCampaigns() {
     try {
       const response = await fetch(getApiUrl('/campaigns/smtp'));
       if (response.ok) {
-        const data = await response.json();
-        setSmtpConfigs(data);
+        const result = await response.json();
+        // Handle both direct array and object with data property
+        if (Array.isArray(result)) {
+          setSmtpConfigs(result);
+        } else if (result.data && Array.isArray(result.data)) {
+          setSmtpConfigs(result.data);
+        } else {
+          // Fallback to empty array if no valid data
+          setSmtpConfigs([]);
+        }
       }
     } catch (error) {
-      // Error fetching SMTP configs handled silently
+      console.error('Error fetching SMTP configs:', error);
+      setSmtpConfigs([]);
     }
   };
 
@@ -148,12 +166,14 @@ export default function EmailCampaigns() {
   };
 
   const handleCampaignAction = (campaignId: string, action: string) => {
-    setCampaigns(campaigns.map(campaign => {
-      if (campaign.id === campaignId) {
-        return { ...campaign, status: action as any };
-      }
-      return campaign;
-    }));
+    if (Array.isArray(campaigns)) {
+      setCampaigns(campaigns.map(campaign => {
+        if (campaign.id === campaignId) {
+          return { ...campaign, status: action as any };
+        }
+        return campaign;
+      }));
+    }
   };
 
   const getOpenRate = (campaign: Campaign) => {
@@ -268,7 +288,7 @@ export default function EmailCampaigns() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {campaigns.map((campaign) => (
+                {Array.isArray(campaigns) && campaigns.map((campaign) => (
                   <tr key={campaign.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
