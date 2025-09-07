@@ -4,25 +4,15 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api')
 
-// Dynamic endpoint paths based on environment
-// For Vercel deployment, we need to detect if we're in production
-const isLocalDev = import.meta.env.DEV || window.location.hostname === 'localhost'
-
-// EXPLICIT FIX: Force production endpoints for Vercel
-// Local dev (Express backend): /api/auth/login
-// Production (Vercel serverless): /api/login
-// The issue is that in production, we should NOT use /auth prefix
-const AUTH_PREFIX = isLocalDev ? '/auth' : ''
+// SIMPLE FIX: Just use the working endpoint
+// Since /api/login works on Vercel, use that for everything
+const FINAL_AUTH_PREFIX = ''
 
 // Debug logging
-console.log('🔧 Auth service config:', {
-  isLocalDev,
-  AUTH_PREFIX,
+console.log('🔧 SIMPLE FIX - Using /api/login for everything:', {
+  FINAL_AUTH_PREFIX,
   API_URL,
-  hostname: window.location.hostname,
-  env: import.meta.env.DEV,
-  expectedEndpoint: isLocalDev ? '/api/auth/login' : '/api/login',
-  actualEndpoint: API_URL + AUTH_PREFIX + '/login'
+  actualEndpoint: API_URL + FINAL_AUTH_PREFIX + '/login'
 })
 
 const api = axios.create({
@@ -58,17 +48,11 @@ api.interceptors.response.use(
 
 export const authService = {
   async login(email: string, password: string) {
-    const endpoint = AUTH_PREFIX + '/login'
+    const endpoint = FINAL_AUTH_PREFIX + '/login'
     const fullUrl = API_URL + endpoint
-    console.log('🔍 LOGIN DEBUG:', {
+    console.log('🔍 LOGIN - Using /api/login:', {
       endpoint,
-      fullUrl,
-      baseURL: API_URL,
-      AUTH_PREFIX,
-      isLocalDev,
-      hostname: window.location.hostname,
-      env: import.meta.env.DEV,
-      VITE_API_URL: import.meta.env.VITE_API_URL
+      fullUrl
     })
     
     try {
@@ -95,7 +79,12 @@ export const authService = {
     company?: string
     phone?: string
   }) {
-    const response = await api.post(AUTH_PREFIX + '/register', userData)
+    const endpoint = FINAL_AUTH_PREFIX + '/register'
+    console.log('🔍 REGISTER - Using /api/register:', {
+      endpoint,
+      fullUrl: API_URL + endpoint
+    })
+    const response = await api.post(endpoint, userData)
     return response.data
   },
 
