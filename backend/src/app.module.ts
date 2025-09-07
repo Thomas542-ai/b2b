@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { BullModule } from '@nestjs/bullmq';
 
 import { AuthModule } from './modules/auth/auth.module';
 import { LeadsModule } from './modules/leads/leads.module';
@@ -24,13 +23,6 @@ import { SupabaseModule } from './modules/supabase/supabase.module';
       signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD || undefined,
-      },
-    }),
     SupabaseModule,
     AuthModule,
     LeadsModule,
