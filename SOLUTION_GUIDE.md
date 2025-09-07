@@ -68,7 +68,7 @@ FRONTEND_URL=http://localhost:3000
 SUPABASE_URL=https://fdylcrgqzgtmpehetmjq.supabase.co
 SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-JWT_SECRET=leadsfynder-jwt-secret-key-2025
+JWT_SECRET=Frj6qu8lE6/KbmFGyasbvFlaF9Jw1TgLShxwdrJDgchFG0g39Xf5Pd/FTxh7gxgAv17l8zBFdWzQvHtUtMnBlg==
 JWT_EXPIRES_IN=7d
 ```
 
