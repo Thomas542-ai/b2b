@@ -61,16 +61,12 @@ export default function Dashboard() {
 
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
-        if (statsData.success) {
-          setStats(statsData.data);
-        }
+        setStats(statsData);
       }
 
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
-        if (activityData.success) {
-          setRecentActivity(activityData.data);
-        }
+        setRecentActivity(activityData);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -92,42 +88,42 @@ export default function Dashboard() {
   const statCards = [
     {
       title: 'Total Leads',
-      value: stats.totalLeads.toLocaleString(),
+      value: (stats.totalLeads || 0).toLocaleString(),
       icon: UserGroupIcon,
       color: 'bg-blue-500',
       change: '+12%'
     },
     {
       title: 'Verified Leads',
-      value: stats.verifiedLeads.toLocaleString(),
+      value: (stats.verifiedLeads || 0).toLocaleString(),
       icon: CheckCircleIcon,
       color: 'bg-green-500',
       change: '+8%'
     },
     {
       title: 'Emails Sent',
-      value: stats.emailsSent.toLocaleString(),
+      value: (stats.emailsSent || 0).toLocaleString(),
       icon: EnvelopeIcon,
       color: 'bg-purple-500',
       change: '+15%'
     },
     {
       title: 'Replies Received',
-      value: stats.repliesReceived.toLocaleString(),
+      value: (stats.repliesReceived || 0).toLocaleString(),
       icon: PhoneIcon,
       color: 'bg-orange-500',
       change: '+23%'
     },
     {
       title: 'Today\'s Follow-ups',
-      value: stats.todayFollowUps.toString(),
+      value: (stats.todayFollowUps || 0).toLocaleString(),
       icon: ClockIcon,
       color: 'bg-red-500',
       change: 'Urgent'
     },
     {
       title: 'Conversion Rate',
-      value: `${stats.conversionRate}%`,
+      value: `${(stats.conversionRate || 0).toFixed(1)}%`,
       icon: ChartBarIcon,
       color: 'bg-indigo-500',
       change: '+2.1%'

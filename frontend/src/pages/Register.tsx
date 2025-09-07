@@ -48,7 +48,8 @@ export default function Register() {
       })
 
       if (result.success) {
-        toast.success('Registration successful! Please check your email to verify your account.')
+        // Registration successful - redirect to login page
+        toast.success('Registration successful! Please log in to continue.')
         navigate('/login')
       } else {
         toast.error(result.message || 'Registration failed')

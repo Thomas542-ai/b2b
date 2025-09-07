@@ -13,7 +13,7 @@ interface LoginFormData {
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  // const navigate = useNavigate()
+  const navigate = useNavigate()
   const { login, isAuthenticated} = useAuth()
 
   useEffect(() => {
@@ -43,8 +43,8 @@ export default function Login() {
       // Use the useAuth login function which handles state updates
       await login(data.email, data.password)
       toast.success('Login successful!')
-      // Force page reload to ensure proper rendering
-      window.location.href = '/'
+      // Navigate to dashboard
+      navigate('/')
     } catch (error: any) {
       toast.error(error.message || 'Login failed')
     } finally {

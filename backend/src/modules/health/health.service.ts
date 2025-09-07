@@ -16,6 +16,16 @@ export class HealthService {
 
   async checkDatabase() {
     try {
+      // Check if we're using demo credentials
+      if (process.env.SUPABASE_URL === 'https://demo.supabase.co') {
+        return {
+          status: 'warning',
+          database: 'demo_mode',
+          message: 'Using demo Supabase credentials. Please configure real credentials for production.',
+          timestamp: new Date().toISOString(),
+        };
+      }
+
       const { data, error } = await this.supabaseService
         .getClient()
         .from('users')

@@ -17,6 +17,10 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   company?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
 }
 
 export class LoginDto {

@@ -14,6 +14,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
+    // Handle demo mode
+    if (payload.sub === 'demo-user-id') {
+      return {
+        id: 'demo-user-id',
+        email: payload.email,
+        firstName: 'Demo',
+        lastName: 'User',
+        company: 'Demo Company',
+      };
+    }
+
     const { data: user } = await this.supabaseService
       .getClient()
       .from('users')

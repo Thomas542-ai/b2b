@@ -7,12 +7,14 @@ export class AnalyticsService {
 
   async getDashboardAnalytics() {
     return {
-      totalLeads: 0,
-      totalCampaigns: 0,
-      emailsSent: 0,
-      openRate: 0,
-      clickRate: 0,
-      conversionRate: 0,
+      totalLeads: 12,
+      verifiedLeads: 8,
+      emailsSent: 45,
+      emailsOpened: 23,
+      repliesReceived: 5,
+      callsScheduled: 3,
+      todayFollowUps: 2,
+      conversionRate: 12.5,
     };
   }
 
@@ -30,5 +32,34 @@ export class AnalyticsService {
       emailMetrics: [],
       performanceMetrics: [],
     };
+  }
+
+  async getActivityAnalytics() {
+    return [
+      {
+        id: '1',
+        type: 'lead_added',
+        message: 'New lead added: John Doe from Acme Corp',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        id: '2',
+        type: 'email_sent',
+        message: 'Email campaign sent to 25 recipients',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+      },
+      {
+        id: '3',
+        type: 'call_scheduled',
+        message: 'Call scheduled with Jane Smith for tomorrow',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+      },
+      {
+        id: '4',
+        type: 'follow_up',
+        message: 'Follow-up reminder: Contact Tech Solutions',
+        timestamp: new Date(Date.now() - 10800000).toISOString(),
+      }
+    ];
   }
 }

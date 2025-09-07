@@ -67,9 +67,7 @@ export default function EmailCampaigns() {
       const response = await fetch(getApiUrl('/campaigns/email'));
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setCampaigns(data.data);
-        }
+        setCampaigns(data);
       }
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -81,9 +79,7 @@ export default function EmailCampaigns() {
       const response = await fetch(getApiUrl('/campaigns/smtp'));
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setSmtpConfigs(data.data);
-        }
+        setSmtpConfigs(data);
       }
     } catch (error) {
       console.error('Error fetching SMTP configs:', error);

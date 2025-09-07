@@ -72,9 +72,7 @@ export default function LeadManager() {
       const response = await fetch(getApiUrl('/leads'));
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setLeads(data.data);
-        }
+        setLeads(data);
       }
     } catch (error) {
       console.error('Error fetching leads:', error);
@@ -303,7 +301,7 @@ export default function LeadManager() {
                             <div className="text-sm font-medium text-gray-900">{lead.name}</div>
                             <div className="text-sm text-gray-500">{lead.company}</div>
                             <div className="flex items-center mt-1">
-                              {lead.tags.map((tag, index) => (
+                              {(lead.tags || []).map((tag, index) => (
                                 <span
                                   key={index}
                                   className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 mr-1"

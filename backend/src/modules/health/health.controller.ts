@@ -19,4 +19,22 @@ export class HealthController {
   async checkRedis() {
     return this.healthService.checkRedis();
   }
+
+  @Get('test')
+  async testEndpoint() {
+    return {
+      message: 'Backend is running correctly!',
+      timestamp: new Date().toISOString(),
+      status: 'success',
+      endpoints: {
+        health: '/api/health',
+        database: '/api/health/db',
+        redis: '/api/health/redis',
+        auth: '/api/auth/*',
+        leads: '/api/leads/*',
+        campaigns: '/api/campaigns/*',
+        analytics: '/api/analytics/*'
+      }
+    };
+  }
 }

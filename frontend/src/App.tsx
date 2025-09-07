@@ -238,6 +238,7 @@ function App() {
 
       {/* Main Content */}
       <Routes>
+        <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/leads" element={<LeadManager />} />
         <Route path="/lead-sources" element={<LeadSources />} />

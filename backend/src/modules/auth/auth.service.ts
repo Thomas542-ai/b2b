@@ -14,6 +14,25 @@ export class AuthService {
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName, company } = registerDto;
 
+    // Check if we're in demo mode
+    if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co') {
+      // Return a mock successful registration for demo mode
+      const payload = { email, sub: 'demo-user-id' };
+      const token = this.jwtService.sign(payload);
+      
+      return {
+        user: {
+          id: 'demo-user-id',
+          email,
+          firstName,
+          lastName,
+          company,
+        },
+        token,
+        message: 'Demo mode: Registration simulated successfully'
+      };
+    }
+
     // Check if user already exists
     const { data: existingUser } = await this.supabaseService
       .getClient()
@@ -66,6 +85,25 @@ export class AuthService {
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
+
+    // Check if we're in demo mode
+    if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co') {
+      // Return a mock successful login for demo mode
+      const payload = { email, sub: 'demo-user-id' };
+      const token = this.jwtService.sign(payload);
+      
+      return {
+        user: {
+          id: 'demo-user-id',
+          email,
+          firstName: 'Demo',
+          lastName: 'User',
+          company: 'Demo Company',
+        },
+        token,
+        message: 'Demo mode: Login simulated successfully'
+      };
+    }
 
     // Find user
     const { data: user, error } = await this.supabaseService
@@ -137,6 +175,18 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string): Promise<any> {
+    // Check if we're in demo mode
+    if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co') {
+      // Return a mock user for demo mode
+      return {
+        id: 'demo-user-id',
+        email,
+        first_name: 'Demo',
+        last_name: 'User',
+        company: 'Demo Company',
+      };
+    }
+
     const { data: user } = await this.supabaseService
       .getClient()
       .from('users')

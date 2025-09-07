@@ -4,12 +4,11 @@ import axios from 'axios'
 const API_URL = import.meta.env.VITE_API_URL || 
   (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api')
 
-// SIMPLE FIX: Just use the working endpoint
-// Since /api/login works on Vercel, use that for everything
-const FINAL_AUTH_PREFIX = ''
+// Use the correct auth prefix for the backend
+const FINAL_AUTH_PREFIX = '/auth'
 
 // Debug logging
-console.log('🔧 SIMPLE FIX - Using /api/login for everything:', {
+console.log('🔧 Auth service config:', {
   FINAL_AUTH_PREFIX,
   API_URL,
   actualEndpoint: API_URL + FINAL_AUTH_PREFIX + '/login'
@@ -50,7 +49,7 @@ export const authService = {
   async login(email: string, password: string) {
     const endpoint = FINAL_AUTH_PREFIX + '/login'
     const fullUrl = API_URL + endpoint
-    console.log('🔍 LOGIN - Using /api/login:', {
+    console.log('🔍 LOGIN - Using /api/auth/login:', {
       endpoint,
       fullUrl
     })
@@ -58,7 +57,14 @@ export const authService = {
     try {
       const response = await api.post(endpoint, { email, password })
       console.log('✅ Login successful:', response.data)
-      return response.data
+      
+      // Transform backend response to match frontend expectations
+      return {
+        success: true,
+        user: response.data.user,
+        token: response.data.token,
+        message: response.data.message
+      }
     } catch (error: any) {
       console.error('❌ Login failed:', {
         message: error.message,
@@ -85,7 +91,14 @@ export const authService = {
       fullUrl: API_URL + endpoint
     })
     const response = await api.post(endpoint, userData)
-    return response.data
+    
+    // Transform backend response to match frontend expectations
+    return {
+      success: true,
+      user: response.data.user,
+      token: response.data.token,
+      message: response.data.message
+    }
   },
 
   async logout() {

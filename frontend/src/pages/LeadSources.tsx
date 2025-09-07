@@ -113,9 +113,7 @@ export default function LeadSources() {
 
       if (response.ok) {
         const data = await response.json();
-        if (data.success) {
-          setSearchResults(data.data);
-        }
+        setSearchResults(data);
       }
     } catch (error) {
       console.error('Error searching Google Maps:', error);

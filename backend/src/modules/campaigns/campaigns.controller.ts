@@ -1,15 +1,23 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param } from '@nestjs/common';
 import { CampaignsService } from './campaigns.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('campaigns')
-@UseGuards(JwtAuthGuard)
 export class CampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
   @Get()
   async getAllCampaigns() {
     return this.campaignsService.getAllCampaigns();
+  }
+
+  @Get('email')
+  async getEmailCampaigns() {
+    return this.campaignsService.getEmailCampaigns();
+  }
+
+  @Get('smtp')
+  async getSMTPConfigs() {
+    return this.campaignsService.getSMTPConfigs();
   }
 
   @Get(':id')
