@@ -11,9 +11,6 @@ import { LeadSourcesModule } from './modules/lead-sources/lead-sources.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { HealthModule } from './modules/health/health.module';
 import { SupabaseModule } from './modules/supabase/supabase.module';
-import { EmailModule } from './modules/email/email.module';
-import { PaymentModule } from './modules/payment/payment.module';
-import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
 
 @Module({
   imports: [
@@ -41,9 +38,6 @@ import { WhatsAppModule } from './modules/whatsapp/whatsapp.module';
     LeadSourcesModule,
     AnalyticsModule,
     HealthModule,
-    EmailModule,
-    PaymentModule,
-    WhatsAppModule,
   ],
 })
 export class AppModule {}

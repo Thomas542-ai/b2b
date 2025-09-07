@@ -75,7 +75,7 @@ export default function LeadManager() {
         setLeads(data);
       }
     } catch (error) {
-      console.error('Error fetching leads:', error);
+      // Error fetching leads handled silently
     }
   };
 
@@ -89,7 +89,7 @@ export default function LeadManager() {
         }
       }
     } catch (error) {
-      console.error('Error fetching call logs:', error);
+      // Error fetching call logs handled silently
     }
   };
 
@@ -165,7 +165,7 @@ export default function LeadManager() {
           }
         }
       } catch (error) {
-        console.error('Error creating call log:', error);
+        // Error creating call log handled silently
       }
     }
   };

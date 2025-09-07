@@ -1,100 +1,73 @@
-import { useState, useEffect } from 'react'
-import { authService } from '../services/auth'
-import { isAuthenticated, getUserFromToken, removeToken } from '../utils/jwt'
+import { useState, useEffect } from 'react';
+import { authService } from '../services/auth';
 
 export interface User {
-  id: string
-  email: string
-  firstName?: string
-  lastName?: string
-  company?: string
-  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN'
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  company: string;
+  role: string;
 }
 
 export function useAuth() {
-  const [isAuthenticatedState, setIsAuthenticatedState] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already authenticated
-    if (isAuthenticated()) {
-      const userData = localStorage.getItem('user')
-      if (userData) {
-        try {
-          const parsedUser = JSON.parse(userData)
-          setUser(parsedUser)
-          setIsAuthenticatedState(true)
-        } catch (error) {
-          // Invalid user data, clear it
-          removeToken()
-          localStorage.removeItem('user')
-          setIsAuthenticatedState(false)
-        }
-      } else {
-        // Try to get user info from token
-        const tokenUser = getUserFromToken()
-        if (tokenUser) {
-          setUser({
-            id: tokenUser.userId,
-            email: tokenUser.email,
-            role: tokenUser.role as 'USER' | 'ADMIN' | 'SUPER_ADMIN'
-          })
-          setIsAuthenticatedState(true)
-        } else {
-          removeToken()
-          setIsAuthenticatedState(false)
-        }
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+
+    if (token && userData) {
+      try {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } else {
-      // Token is expired or doesn't exist
-      removeToken()
-      localStorage.removeItem('user')
-      setIsAuthenticatedState(false)
+      setUser(null);
+      setIsAuthenticated(false);
     }
-    
-    setIsLoading(false)
-  }, [])
+    setIsLoading(false);
+  }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const result = await authService.login(email, password)
-      
-      if (result.success) {
-        // Store token and user data
-        localStorage.setItem('token', result.token)
-        localStorage.setItem('user', JSON.stringify(result.user))
-        setUser(result.user)
-        setIsAuthenticatedState(true)
-        return result
-      } else {
-        throw new Error(result.message || 'Login failed')
-      }
-    } catch (error) {
-      throw error
+    const result = await authService.login(email, password);
+    
+    if (result && result.success) {
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
+      setUser(result.user);
+      setIsAuthenticated(true);
     }
-  }
+    
+    return result;
+  };
 
   const logout = async () => {
     try {
-      // Call backend logout endpoint
-      await authService.logout()
+      await authService.logout();
     } catch (error) {
-      console.error('Logout error:', error)
+      // Logout error handled silently
     } finally {
-      // Clear local storage regardless of backend response
-      removeToken()
-      localStorage.removeItem('user')
-      setUser(null)
-      setIsAuthenticatedState(false)
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setIsAuthenticated(false);
     }
-  }
+  };
 
   return {
     user,
-    isAuthenticated: isAuthenticatedState,
+    isAuthenticated,
     isLoading,
     login,
     logout,
-  }
+  };
 }

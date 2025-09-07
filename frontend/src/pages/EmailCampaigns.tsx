@@ -70,7 +70,7 @@ export default function EmailCampaigns() {
         setCampaigns(data);
       }
     } catch (error) {
-      console.error('Error fetching campaigns:', error);
+      // Error fetching campaigns handled silently
     }
   };
 
@@ -82,7 +82,7 @@ export default function EmailCampaigns() {
         setSmtpConfigs(data);
       }
     } catch (error) {
-      console.error('Error fetching SMTP configs:', error);
+      // Error fetching SMTP configs handled silently
     }
   };
 
@@ -142,7 +142,7 @@ export default function EmailCampaigns() {
           }
         }
       } catch (error) {
-        console.error('Error creating campaign:', error);
+        // Error creating campaign handled silently
       }
     }
   };

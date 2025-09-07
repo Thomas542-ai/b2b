@@ -12,7 +12,7 @@ import { SupabaseModule } from '../supabase/supabase.module';
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'your-secret-key',
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '7d' },
+      signOptions: { expiresIn: '7d' },
     }),
     SupabaseModule,
   ],

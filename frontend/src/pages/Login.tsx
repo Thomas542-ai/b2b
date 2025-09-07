@@ -18,18 +18,18 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      window.location.href = '/'
+      navigate('/')
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, navigate])
 
   // useEffect for component mount
   useEffect(() => {
     // Check if user is already logged in
     const token = localStorage.getItem('token')
     if (token) {
-      window.location.href = '/'
+      navigate('/')
     }
-  }, [])
+  }, [navigate])
 
   const {
     register,
@@ -41,10 +41,19 @@ export default function Login() {
     setIsLoading(true)
     try {
       // Use the useAuth login function which handles state updates
-      await login(data.email, data.password)
-      toast.success('Login successful!')
-      // Navigate to dashboard
-      navigate('/')
+      const result = await login(data.email, data.password)
+      
+      if (result && result.success) {
+        toast.success('Login successful!')
+        // Wait for authentication state to update, then navigate
+        setTimeout(() => {
+          // Force a page reload to ensure clean state
+          window.location.href = '/dashboard'
+        }, 1000)
+      } else {
+        const errorMessage = result?.message || 'Login failed'
+        toast.error(errorMessage)
+      }
     } catch (error: any) {
       toast.error(error.message || 'Login failed')
     } finally {
