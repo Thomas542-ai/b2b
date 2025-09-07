@@ -3,7 +3,7 @@
 
 // Dynamic API URL based on environment
 const API_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.DEV ? 'http://localhost:8000/api' : '/api')
+  (import.meta.env.DEV ? 'http://localhost:8000/api' : window.location.origin + '/api')
 
 /**
  * Get the full API URL for a given endpoint
