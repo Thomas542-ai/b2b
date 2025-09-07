@@ -32,7 +32,7 @@ interface RecentActivity {
 }
 
 export default function Dashboard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalLeads: 0,
     verifiedLeads: 0,
@@ -69,11 +69,22 @@ export default function Dashboard() {
         setRecentActivity(activityData);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      // Error fetching dashboard data handled silently
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold text-gray-900">Loading dashboard...</h1>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -153,6 +164,17 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {isLoading ? (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading dashboard data...</p>
+            </div>
+          </div>
+        </div>
+      ) : (
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
@@ -247,6 +269,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }

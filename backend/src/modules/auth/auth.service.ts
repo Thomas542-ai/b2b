@@ -1,64 +1,147 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { SupabaseService } from '../supabase/supabase.service';
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 import * as bcrypt from 'bcryptjs';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class AuthService {
+  private readonly usersFile = path.join(__dirname, '..', '..', '..', 'users.json');
+
   constructor(
-    private readonly supabaseService: SupabaseService,
     private readonly jwtService: JwtService,
-  ) {}
+    private readonly supabaseService: SupabaseService
+  ) {
+    this.initializeUsersFile();
+  }
+
+  private isDemoMode(): boolean {
+    return !process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co';
+  }
+
+  private initializeUsersFile() {
+    if (!fs.existsSync(this.usersFile)) {
+      const initialUsers = {
+        "admin@example.com": {
+          id: "1",
+          email: "admin@example.com",
+          password: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj4J/8KzKz2K", // "admin123"
+          firstName: "Admin",
+          lastName: "User",
+          company: "Admin Company",
+          role: "ADMIN",
+          createdAt: new Date().toISOString()
+        }
+      };
+      fs.writeFileSync(this.usersFile, JSON.stringify(initialUsers, null, 2));
+    }
+  }
+
+  private readUsers(): Record<string, any> {
+    if (!fs.existsSync(this.usersFile)) {
+      return {};
+    }
+    const data = fs.readFileSync(this.usersFile, 'utf8');
+    return JSON.parse(data);
+  }
+
+  private writeUsers(users: Record<string, any>) {
+    fs.writeFileSync(this.usersFile, JSON.stringify(users, null, 2));
+  }
 
   async register(registerDto: RegisterDto) {
     const { email, password, firstName, lastName, company } = registerDto;
 
-    // Check if we're in demo mode
-    if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co') {
-      // Return a mock successful registration for demo mode
-      const payload = { email, sub: 'demo-user-id' };
-      const token = this.jwtService.sign(payload);
-      
-      return {
-        user: {
-          id: 'demo-user-id',
-          email,
-          firstName,
-          lastName,
-          company,
-        },
-        token,
-        message: 'Demo mode: Registration simulated successfully'
-      };
+    if (this.isDemoMode()) {
+      return this.registerDemo(registerDto);
     }
 
-    // Check if user already exists
-    const { data: existingUser } = await this.supabaseService
-      .getClient()
-      .from('users')
-      .select('id')
-      .eq('email', email)
-      .single();
+    return this.registerSupabase(registerDto);
+  }
 
-    if (existingUser) {
+  private async registerDemo(registerDto: RegisterDto) {
+    const { email, password, firstName, lastName, company } = registerDto;
+
+    // Check if user already exists
+    const users = this.readUsers();
+    if (users[email]) {
       throw new ConflictException('User with this email already exists');
     }
 
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Create user
+    // Create new user
+    const newUser = {
+      id: Date.now().toString(),
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      company,
+      role: 'USER',
+      createdAt: new Date().toISOString()
+    };
+
+    // Save user
+    users[email] = newUser;
+    this.writeUsers(users);
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      userId: newUser.id,
+      email: newUser.email,
+      role: newUser.role
+    });
+
+    return {
+      success: true,
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        company: newUser.company,
+        role: newUser.role
+      },
+      token,
+      message: 'Registration successful (Demo Mode)'
+    };
+  }
+
+  private async registerSupabase(registerDto: RegisterDto) {
+    const { email, password, firstName, lastName, company } = registerDto;
+
+    // Check if user already exists in Supabase
+    const { data: existingUser, error: checkError } = await this.supabaseService
+      .getClient()
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    // If user exists (no error means user found)
+    if (existingUser && !checkError) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user in Supabase
     const { data: user, error } = await this.supabaseService
       .getClient()
       .from('users')
       .insert({
         email,
         password: hashedPassword,
-        first_name: firstName,
-        last_name: lastName,
+        firstname: firstName,
+        lastname: lastName,
         company,
-        created_at: new Date().toISOString(),
+        role: 'USER',
+        createdat: new Date().toISOString()
       })
       .select()
       .single();
@@ -68,44 +151,80 @@ export class AuthService {
     }
 
     // Generate JWT token
-    const payload = { email: user.email, sub: user.id };
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign({
+      userId: user.id,
+      email: user.email,
+      role: user.role
+    });
 
     return {
+      success: true,
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        firstName: user.firstname,
+        lastName: user.lastname,
         company: user.company,
+        role: user.role
       },
       token,
+      message: 'Registration successful (Supabase)'
     };
   }
 
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
-    // Check if we're in demo mode
-    if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co') {
-      // Return a mock successful login for demo mode
-      const payload = { email, sub: 'demo-user-id' };
-      const token = this.jwtService.sign(payload);
-      
-      return {
-        user: {
-          id: 'demo-user-id',
-          email,
-          firstName: 'Demo',
-          lastName: 'User',
-          company: 'Demo Company',
-        },
-        token,
-        message: 'Demo mode: Login simulated successfully'
-      };
+    if (this.isDemoMode()) {
+      return this.loginDemo(loginDto);
     }
 
-    // Find user
+    return this.loginSupabase(loginDto);
+  }
+
+  private async loginDemo(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+
+    // Get user from file
+    const users = this.readUsers();
+    const user = users[email];
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    // Generate JWT token
+    const token = this.jwtService.sign({
+      userId: user.id,
+      email: user.email,
+      role: user.role
+    });
+
+    return {
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        company: user.company,
+        role: user.role
+      },
+      token,
+      message: 'Login successful (Demo Mode)'
+    };
+  }
+
+  private async loginSupabase(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+
+    // Get user from Supabase
     const { data: user, error } = await this.supabaseService
       .getClient()
       .from('users')
@@ -114,36 +233,112 @@ export class AuthService {
       .single();
 
     if (error || !user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Verify password
+    // Check password
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException('Invalid email or password');
     }
 
     // Generate JWT token
-    const payload = { email: user.email, sub: user.id };
-    const token = this.jwtService.sign(payload);
+    const token = this.jwtService.sign({
+      userId: user.id,
+      email: user.email,
+      role: user.role
+    });
 
     return {
+      success: true,
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        firstName: user.firstname,
+        lastName: user.lastname,
         company: user.company,
+        role: user.role
       },
       token,
+      message: 'Login successful (Supabase)'
+    };
+  }
+
+  async validateUser(email: string, password: string) {
+    if (this.isDemoMode()) {
+      const users = this.readUsers();
+      const user = users[email];
+
+      if (!user) {
+        return null;
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return null;
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        company: user.company,
+        role: user.role
+      };
+    }
+
+    // Supabase validation
+    const { data: user, error } = await this.supabaseService
+      .getClient()
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !user) {
+      return null;
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return null;
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstname,
+      lastName: user.lastname,
+      company: user.company,
+      role: user.role
     };
   }
 
   async getProfile(userId: string) {
+    if (this.isDemoMode()) {
+      const users = this.readUsers();
+      const user = Object.values(users).find((u: any) => u.id === userId);
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        company: user.company,
+        role: user.role
+      };
+    }
+
+    // Supabase profile
     const { data: user, error } = await this.supabaseService
       .getClient()
       .from('users')
-      .select('id, email, first_name, last_name, company, created_at')
+      .select('id, email, firstname, lastname, company, role')
       .eq('id', userId)
       .single();
 
@@ -154,50 +349,14 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email,
-      firstName: user.first_name,
-      lastName: user.last_name,
+      firstName: user.firstname,
+      lastName: user.lastname,
       company: user.company,
-      createdAt: user.created_at,
+      role: user.role
     };
   }
 
-  async refreshToken(user: any) {
-    const payload = { email: user.email, sub: user.id };
-    return {
-      token: this.jwtService.sign(payload),
-    };
-  }
-
-  async logout(userId: string) {
-    // In a real application, you might want to blacklist the token
-    // For now, we'll just return a success message
-    return { message: 'Logged out successfully' };
-  }
-
-  async validateUser(email: string, password: string): Promise<any> {
-    // Check if we're in demo mode
-    if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL === 'https://demo.supabase.co') {
-      // Return a mock user for demo mode
-      return {
-        id: 'demo-user-id',
-        email,
-        first_name: 'Demo',
-        last_name: 'User',
-        company: 'Demo Company',
-      };
-    }
-
-    const { data: user } = await this.supabaseService
-      .getClient()
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .single();
-
-    if (user && await bcrypt.compare(password, user.password)) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
+  async logout() {
+    return { message: 'Logout successful' };
   }
 }

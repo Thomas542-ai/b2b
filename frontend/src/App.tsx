@@ -15,6 +15,9 @@ function App() {
   const { isAuthenticated, isLoading, logout, user } = useAuth()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  // Force re-render when authentication state changes
+  const authKey = `${isAuthenticated}-${user?.id || 'no-user'}`
 
   if (isLoading) {
     return (
@@ -34,7 +37,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div key={authKey} className="min-h-screen bg-gray-50">
       {/* Navigation Header */}
       <nav className="bg-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

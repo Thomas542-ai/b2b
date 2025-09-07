@@ -116,7 +116,7 @@ export default function LeadSources() {
         setSearchResults(data);
       }
     } catch (error) {
-      console.error('Error searching Google Maps:', error);
+      // Error searching Google Maps handled silently
     } finally {
       setIsSearching(false);
     }
